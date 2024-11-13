@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NMS</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="/views/tailwind.css" rel="stylesheet">
+</head>
+
+<body class="bg-[#222831] flex items-center justify-center min-h-screen text-white">
+
+  <form class="bg-[#393e46] items-center p-16 size-fit rounded-2xl hover:border-[#00acb5] border border-transparent">
+
+    <h1 id="form-type-title" class="text-3xl font-medium text-center">Login</h2>
+
+      <br>
+
+      <div class="flex flex-col mb-2">
+        <label for="username-field" class="text-left ml-2 mb-1 block text-lg font-normal">Username</label>
+        <input id="username-field" type="text" autofocus="true" placeholder="Enter username"
+          class="text-[#222831] rounded-3xl p-2 border-2 border-gray-300 outline-none hover:border-[#017177] transition duration-200">
+      </div>
+
+      <div class="flex flex-col mb-2">
+        <label for="password-field" class="text-left ml-2 mb-1 block text-lg font-normal">Password</label>
+        <input id="password-field" type="password" placeholder="Enter password"
+          class="text-[#222831] rounded-3xl p-2 border-2 border-gray-300 outline-none hover:border-[#017177] transition duration-200">
+      </div>
+
+      <br>
+
+      <div class="flex justify-center">
+        <button type="submit"
+          class="bg-[#00acb5] hover:bg-[#017177] rounded-2xl px-7 py-2 text-center m-0 w-3/4 transition duration-200 ">Submit</button>
+      </div>
+
+      <br>
+
+      <!-- TODO hx-swap  -->
+      <!-- <p id="error-message">{{ .ErrorMessage }}</p> -->
+      <p>Don't have an account yet?</p>
+
+      <div class="flex justify-center">
+        <a href="/views/register.html"
+          class="text-center underline transition duration-300 hover:text-[#00acb5]">Register</a>
+      </div>
+
+  </form>
+
+</body>
+
+</html>
