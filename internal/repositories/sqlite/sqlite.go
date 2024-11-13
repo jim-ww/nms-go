@@ -12,7 +12,7 @@ type SqliteStorage struct {
 }
 
 func NewSqliteStorage(storagePath string) *sql.DB {
-	db, err := sql.Open("sqlite", storagePath)
+	db, err := sql.Open("sqlite3", storagePath)
 	if err != nil {
 		log.Fatal(err)
 	}
