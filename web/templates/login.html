@@ -7,6 +7,7 @@
   <title>{{ .Title }}</title>
   <link href=" https://cdn.jsdelivr.net/npm/tailwindcss@3.4.14/base.min.css " rel="stylesheet">
   <link href="/web/static/tailwind.css" rel="stylesheet">
+  <link rel="icon" href="/favicon.ico" type="image/x-icon">
   <script src="https://unpkg.com/htmx.org@2.0.3"
     integrity="sha384-0895/pl2MU10Hqc6jd4RvrthNlDiE9U1tWmX7WRESftEDRosgxNsQG/Ze9YMRzHq"
     crossorigin="anonymous"></script>
@@ -23,21 +24,21 @@
 
       <div class="flex flex-col mb-2">
         <label for="username-field" class="text-left ml-2 mb-1 block text-lg font-normal">Username</label>
-        <input id="username-field" type="text" autofocus="true" placeholder="Enter username"
+        <input id="username-field" name="username" type="text" autofocus="true" placeholder="Enter username"
           class="text-slate-800 rounded-md p-2 border-2 border-gray-300 outline-none hover:border-teal-700 transition duration-200">
       </div>
 
       {{ if .IsRegisterForm }}
       <div class="flex flex-col mb-2">
         <label for="email-field" class="text-left ml-2 mb-1 block text-lg font-normal">Email</label>
-        <input id="email-field" type="text" autofocus="true" placeholder="Enter email"
+        <input id="email-field" name="email" type="text" autofocus="true" placeholder="Enter email"
           class="text-slate-800 rounded-md p-2 border-2 border-gray-300 outline-none hover:border-teal-700 transition duration-200">
       </div>
       {{ end }}
 
       <div class="flex flex-col mb-7">
         <label for="password-field" class="text-left ml-2 mb-1 block text-lg font-normal">Password</label>
-        <input id="password-field" type="password" placeholder="Enter password"
+        <input id="password-field" name="password" type="password" placeholder="Enter password"
           class="text-slate-800 rounded-md p-2 border-2 border-gray-300 outline-none hover:border-teal-700 transition duration-200">
       </div>
 

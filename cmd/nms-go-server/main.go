@@ -19,7 +19,10 @@ func main() {
 	_ = storage
 
 	http.Handle("/web/static/", http.StripPrefix("/web/static/", http.FileServer(http.Dir("./web/static"))))
+	http.Handle("/favicon.ico", http.FileServer(http.Dir("./web/static")))
+
 	http.HandleFunc("GET /login", middleware.RequestLogger(handlers.LoginTmpl))
+	http.HandleFunc("POST /api/login", middleware.RequestLogger(handlers.Login))
 	http.HandleFunc("GET /register", middleware.RequestLogger(handlers.RegisterTmpl))
 
 	log.Fatal(http.ListenAndServe(cfg.HTTPServer.Address, nil))

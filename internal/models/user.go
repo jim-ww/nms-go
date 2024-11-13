@@ -4,8 +4,8 @@ import "time"
 
 type User struct {
 	ID        int64     `json:"id"`
-	Username  string    `json:"username" validate:"min=3 max=30"`
-	Email     string    `json:"email" validate:"email"`
+	Username  string    `json:"username"`
+	Email     string    `json:"email"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }
