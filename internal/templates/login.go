@@ -1,14 +1,14 @@
 package templates
 
-type LoginData struct {
+type Login struct {
 	Title                 string
 	IsRegisterForm        bool
 	AlternativeAction     string
 	AlternativeActionText string
 }
 
-func NewLoginData(title, alternativeAction, alternativeActionText string, isRegisterForm bool) LoginData {
-	return LoginData{
+func NewLogin(title, alternativeAction, alternativeActionText string, isRegisterForm bool) *Login {
+	return &Login{
 		Title:                 title,
 		AlternativeAction:     alternativeAction,
 		AlternativeActionText: alternativeActionText,
