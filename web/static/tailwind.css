@@ -554,6 +554,11 @@ video {
   display: none;
 }
 
+.mx-auto {
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .mb-1 {
   margin-bottom: 0.25rem;
 }
@@ -601,6 +606,15 @@ video {
   width: 75%;
 }
 
+.max-w-fit {
+  max-width: -moz-fit-content;
+  max-width: fit-content;
+}
+
+.max-w-sm {
+  max-width: 24rem;
+}
+
 .flex-col {
   flex-direction: column;
 }
@@ -638,19 +652,16 @@ video {
   border-color: transparent;
 }
 
-.bg-slate-700 {
-  --tw-bg-opacity: 1;
-  background-color: rgb(51 65 85 / var(--tw-bg-opacity));
+.bg-\[--accent\] {
+  background-color: var(--accent);
 }
 
-.bg-slate-800 {
-  --tw-bg-opacity: 1;
-  background-color: rgb(30 41 59 / var(--tw-bg-opacity));
+.bg-\[--primary\] {
+  background-color: var(--primary);
 }
 
-.bg-teal-500 {
-  --tw-bg-opacity: 1;
-  background-color: rgb(20 184 166 / var(--tw-bg-opacity));
+.bg-\[--secondary\] {
+  background-color: var(--secondary);
 }
 
 .p-16 {
@@ -697,14 +708,16 @@ video {
   font-weight: 400;
 }
 
-.text-slate-800 {
-  --tw-text-opacity: 1;
-  color: rgb(30 41 59 / var(--tw-text-opacity));
+.text-\[--danger\] {
+  color: var(--danger);
 }
 
-.text-white {
-  --tw-text-opacity: 1;
-  color: rgb(255 255 255 / var(--tw-text-opacity));
+.text-\[--primary\] {
+  color: var(--primary);
+}
+
+.text-\[--text\] {
+  color: var(--text);
 }
 
 .underline {
@@ -736,22 +749,18 @@ video {
   cursor: pointer;
 }
 
-.hover\:border-teal-500:hover {
-  --tw-border-opacity: 1;
-  border-color: rgb(20 184 166 / var(--tw-border-opacity));
+.hover\:border-\[--accent-hover\]:hover {
+  border-color: var(--accent-hover);
 }
 
-.hover\:border-teal-700:hover {
-  --tw-border-opacity: 1;
-  border-color: rgb(15 118 110 / var(--tw-border-opacity));
+.hover\:border-\[--accent\]:hover {
+  border-color: var(--accent);
 }
 
-.hover\:bg-teal-700:hover {
-  --tw-bg-opacity: 1;
-  background-color: rgb(15 118 110 / var(--tw-bg-opacity));
+.hover\:bg-\[--accent-hover\]:hover {
+  background-color: var(--accent-hover);
 }
 
-.hover\:text-teal-500:hover {
-  --tw-text-opacity: 1;
-  color: rgb(20 184 166 / var(--tw-text-opacity));
+.hover\:text-\[--accent\]:hover {
+  color: var(--accent);
 }
