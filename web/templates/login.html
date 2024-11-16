@@ -10,6 +10,13 @@
       <input id="username-field" name="username" type="text" autofocus="true" placeholder="Enter username"
         value="{{ .Username }}"
         class="text-[--primary] rounded-md p-2 border-2 border-gray-300 outline-none hover:border-[--accent-hover] transition duration-200">
+      {{ if .ValidationErrors.username }}
+      <ul class="text-[--danger] mt-1">
+        {{ range .ValidationErrors.username }}
+        <li>{{ . }}</li>
+        {{ end }}
+      </ul>
+      {{ end }}
     </div>
 
     {{ if .IsRegisterForm }}
@@ -17,6 +24,13 @@
       <label for="email-field" class="text-left ml-2 mb-1 block text-lg font-normal">Email</label>
       <input id="email-field" name="email" type="text" autofocus="true" placeholder="Enter email" value="{{ .Email }}"
         class="text-[--primary] rounded-md p-2 border-2 border-gray-300 outline-none hover:border-[--accent-hover] transition duration-200">
+      {{ if .ValidationErrors.email }}
+      <ul class="text-[--danger] mt-1">
+        {{ range .ValidationErrors.email }}
+        <li>{{ . }}</li>
+        {{ end }}
+      </ul>
+      {{ end }}
     </div>
     {{ end }}
 
@@ -24,17 +38,14 @@
       <label for="password-field" class="text-left ml-2 mb-1 block text-lg font-normal">Password</label>
       <input id="password-field" name="password" type="password" placeholder="Enter password"
         class="text-[--primary] rounded-md p-2 border-2 border-gray-300 outline-none hover:border-[--accent-hover] transition duration-200">
-    </div>
-
-    {{ if .ValidationErrors }}
-    <ul class="mb-5 mx-auto">
-      {{ range .ValidationErrors }}
-      <li class="text-[--danger] max-w-fit">{{ . }}</li>
+      {{ if .ValidationErrors.password }}
+      <ul class="text-[--danger] mt-1">
+        {{ range .ValidationErrors.password }}
+        <li>{{ . }}</li>
+        {{ end }}
+      </ul>
       {{ end }}
-    </ul>
-    {{ end }}
-
-
+    </div>
 
     <div class="flex justify-center mb-5">
       <button type="submit" {{ if .IsRegisterForm }} hx-post="/api/register" {{ else }} hx-post="/api/login" {{ end }}

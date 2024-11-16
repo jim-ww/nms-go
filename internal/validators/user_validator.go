@@ -1,81 +1,64 @@
 package validators
 
 import (
-	"errors"
 	"regexp"
 	"unicode/utf8"
 
 	"github.com/jim-ww/nms-go/internal/dtos"
 )
 
-var (
-	ErrUsernameLength = errors.New("username length must be between 3 and 30")
-	ErrPasswordLength = errors.New("password length must be between 3 and 255")
-	ErrEmailLength    = errors.New("email length must be between 3 and 255")
-	ErrInvalidEmail   = errors.New("invalid email")
-	// TODO does this belong in here?
-	ErrUsernameTaken = errors.New("username already exists")
-	ErrEmailTaken    = errors.New("email already exists")
+const (
+	ErrUsernameLength = "username length must be between 3 and 30 characters"
+	ErrPasswordLength = "password length must be between 3 and 255 characters"
+	ErrEmailLength    = "email length must be between 3 and 255 characters"
+	ErrEmailInvalid   = "invalid email"
 )
 
-func ValidateLoginDTO(dto *dtos.LoginDTO) (isValid bool, errs []error) {
-	usernameValid, err := isValidUsername(dto.Username)
-	if err != nil {
-		errs = append(errs, err)
-	}
-	passwordValid, err := isValidPassword(dto.Password)
-	if err != nil {
-		errs = append(errs, err)
-	}
-	if len(errs) > 0 {
-		return false, errs
-	}
-	return usernameValid && passwordValid, nil
+const (
+	UsernameField = "username"
+	EmailField    = "email"
+	PasswordField = "password"
+)
+
+func ValidateLoginDTO(dto *dtos.LoginDTO) map[string][]string {
+	errs := make(map[string][]string, 2)
+	errs[UsernameField] = validateUsername(dto.Username)
+	errs[PasswordField] = validatePassword(dto.Password)
+	return errs
 }
 
-func ValidateRegisterDTO(dto *dtos.RegisterDTO) (isValid bool, errs []error) {
-	usernameValid, err := isValidUsername(dto.Username)
-	if err != nil {
-		errs = append(errs, err)
-	}
-	passwordValid, err := isValidPassword(dto.Password)
-	if err != nil {
-		errs = append(errs, err)
-	}
-	emailValid, err := isValidEmail(dto.Email)
-	if err != nil {
-		errs = append(errs, err)
-	}
-	if len(errs) > 0 {
-		return false, errs
-	}
-	return usernameValid && passwordValid && emailValid, nil
+func ValidateRegisterDTO(dto *dtos.RegisterDTO) map[string][]string {
+	errs := make(map[string][]string, 3)
+	errs[UsernameField] = validateUsername(dto.Username)
+	errs[EmailField] = validateEmail(dto.Email)
+	errs[PasswordField] = validatePassword(dto.Password)
+	return errs
 }
 
-func isValidUsername(username string) (bool, error) {
+func validateUsername(username string) (errs []string) {
 	len := utf8.RuneCountInString(username)
 	if len < 3 || len > 30 {
-		return false, ErrUsernameLength
+		errs = append(errs, ErrUsernameLength)
 	}
-	return true, nil
+	return errs
 }
 
-func isValidEmail(email string) (bool, error) {
-	len := utf8.RuneCountInString(email)
-	if len < 3 || len > 255 {
-		return false, ErrEmailLength
-	}
+func validateEmail(email string) (errs []string) {
 	re := regexp.MustCompile(`^[\w\-\.]+@([\w-]+\.)+[\w-]{2,}$`)
 	if !re.MatchString(email) {
-		return false, ErrInvalidEmail
+		errs = append(errs, ErrEmailInvalid)
 	}
-	return true, nil
+	len := utf8.RuneCountInString(email)
+	if len < 3 || len > 255 {
+		errs = append(errs, ErrEmailLength)
+	}
+	return errs
 }
 
-func isValidPassword(password string) (bool, error) {
+func validatePassword(password string) (errs []string) {
 	len := utf8.RuneCountInString(password)
 	if len < 3 || len > 255 {
-		return false, ErrPasswordLength
+		errs = append(errs, ErrPasswordLength)
 	}
-	return true, nil
+	return errs
 }
