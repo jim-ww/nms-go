@@ -1,4 +1,4 @@
-package middleware
+package auth
 
 import "net/http"
 
@@ -10,6 +10,6 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		}
 		// TODO TODO TODO
 
-		next.ServeHTTP(w, r) // Call the next handler
+		next.ServeHTTP(w, r)
 	})
 }

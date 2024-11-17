@@ -5,18 +5,25 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 )
 
+type JWTTokenConfig struct {
+	Secret         string        `json:"secret"`
+	ExpirationTime time.Duration `json:"expiration_time"` // TODO implement duration values reader?
+}
+
 type Config struct {
-	Env         string     `json:"env" env:"ENV" env-default:"local"` // local, dev, prod
-	StoragePath string     `json:"storage_path" env:"STORAGE_PATH" env-default:"/storage/sqlite/nms.db"`
-	HTTPServer  HTTPServer `json:"http_server"`
+	Env            string `json:"env" env:"ENV" env-default:"local"` // local, dev, prod
+	StoragePath    string `json:"storage_path" env:"STORAGE_PATH" env-default:"/storage/sqlite/nms.db"`
+	HTTPServer     `json:"http_server"`
+	JWTTokenConfig *JWTTokenConfig `json:"jwt-token"`
 }
 
 type HTTPServer struct {
-	Address string `json:"address" env:"ADDRESS" env-default:"localhost:8080"`
-	// Timeout     time.Duration `json:"timeout" env:"TIMEOUT" env-default:"4s"`
-	// IdleTimeout time.Duration `json:"idle_timeout" env:"IDLE_TIMEOUT" env-default:"60s"`
+	Address string `json:"address"` // TODO default values?
+	// Timeout     time.Duration `json:"timeout" env-default:"4s"`  // TODO implement duration values reader?
+	// IdleTimeout time.Duration `json:"idle_timeout" env-default:"60s"`
 }
 
 func MustLoad() *Config {

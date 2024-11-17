@@ -1,10 +1,8 @@
-package validators
+package auth
 
 import (
 	"regexp"
 	"unicode/utf8"
-
-	"github.com/jim-ww/nms-go/internal/dtos"
 )
 
 const (
@@ -20,14 +18,14 @@ const (
 	PasswordField = "password"
 )
 
-func ValidateLoginDTO(dto *dtos.LoginDTO) map[string][]string {
+func ValidateLoginDTO(dto *LoginDTO) map[string][]string {
 	errs := make(map[string][]string, 2)
 	errs[UsernameField] = validateUsername(dto.Username)
 	errs[PasswordField] = validatePassword(dto.Password)
 	return errs
 }
 
-func ValidateRegisterDTO(dto *dtos.RegisterDTO) map[string][]string {
+func ValidateRegisterDTO(dto *RegisterDTO) map[string][]string {
 	errs := make(map[string][]string, 3)
 	errs[UsernameField] = validateUsername(dto.Username)
 	errs[EmailField] = validateEmail(dto.Email)

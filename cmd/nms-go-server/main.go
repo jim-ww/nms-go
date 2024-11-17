@@ -2,30 +2,39 @@ package main
 
 import (
 	"log"
+	"log/slog"
 	"net/http"
 	"strings"
+	"time"
 
-	"github.com/jim-ww/nms-go/internal/config"
-	"github.com/jim-ww/nms-go/internal/handlers/login"
+	"github.com/jim-ww/nms-go/internal/auth"
 	"github.com/jim-ww/nms-go/internal/middleware"
 	"github.com/jim-ww/nms-go/internal/repositories/sqlite"
+	"github.com/jim-ww/nms-go/pkg/config"
+	sl "github.com/jim-ww/nms-go/pkg/utils/loggers/slog"
 )
 
 func main() {
 
 	cfg := config.MustLoad()
-	_ = cfg
+	cfg.JWTTokenConfig.ExpirationTime = time.Duration(time.Hour * 24 * 7) // TODO
+
+	logger := sl.SetupLogger(cfg.Env)
+
+	logger.Info("Initialized logger", slog.Any("config", cfg)) // TODO remove
 
 	storage := sqlite.NewSqliteStorage(cfg.StoragePath)
 	_ = storage
 
 	mux := http.NewServeMux()
 
+	// lh := login.New(authService, logger)
+
 	routes := map[string]http.HandlerFunc{
-		"GET /login":         login.LoginTmpl,
-		"GET /register":      login.RegisterTmpl,
-		"POST /api/login":    login.Login,
-		"POST /api/register": login.Register,
+		"GET /login":    auth.LoginTmpl,
+		"GET /register": auth.RegisterTmpl,
+		// "POST /api/login":    lh.Login,
+		// "POST /api/register": lh.Register,
 	}
 
 	for path, handler := range routes {

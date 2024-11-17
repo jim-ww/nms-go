@@ -1,6 +1,13 @@
-package models
+package user
 
 import "time"
+
+type Role string
+
+const (
+	ROLE_USER  Role = "user"
+	ROLE_ADMIN Role = "admin"
+)
 
 type User struct {
 	ID        int64     `json:"id"`
@@ -8,4 +15,5 @@ type User struct {
 	Email     string    `json:"email"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
+	Role      Role      `json:"role"`
 }

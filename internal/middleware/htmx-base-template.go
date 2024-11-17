@@ -5,7 +5,7 @@ import (
 	"html/template"
 	"net/http"
 
-	"github.com/jim-ww/nms-go/internal/templates"
+	"github.com/jim-ww/nms-go/pkg/templates"
 )
 
 var baseTmpl = template.Must(template.ParseFiles("web/templates/base.html"))
