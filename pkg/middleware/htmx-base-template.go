@@ -8,7 +8,7 @@ import (
 	"github.com/jim-ww/nms-go/pkg/templates"
 )
 
-var baseTmpl = template.Must(template.ParseFiles("web/templates/base.html"))
+var baseTmpl *template.Template = template.Must(template.ParseFiles("web/templates/base.html"))
 
 type CustomResponseWriter struct {
 	http.ResponseWriter

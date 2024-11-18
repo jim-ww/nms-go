@@ -1,6 +1,6 @@
 package repository
 
-import "github.com/jim-ww/nms-go/internal/user"
+import "github.com/jim-ww/nms-go/internal/features/user"
 
 type AuthRepository interface {
 	IsUsernameTaken(username string) (taken bool, err error)

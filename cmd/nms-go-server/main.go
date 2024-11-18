@@ -7,10 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jim-ww/nms-go/internal/auth"
-	"github.com/jim-ww/nms-go/internal/middleware"
-	"github.com/jim-ww/nms-go/internal/repositories/sqlite"
+	"github.com/jim-ww/nms-go/internal/features/auth/handlers"
 	"github.com/jim-ww/nms-go/pkg/config"
+	"github.com/jim-ww/nms-go/pkg/middleware"
 	sl "github.com/jim-ww/nms-go/pkg/utils/loggers/slog"
 )
 
@@ -23,16 +22,13 @@ func main() {
 
 	logger.Info("Initialized logger", slog.Any("config", cfg)) // TODO remove
 
-	storage := sqlite.NewSqliteStorage(cfg.StoragePath)
-	_ = storage
-
 	mux := http.NewServeMux()
 
 	// lh := login.New(authService, logger)
 
 	routes := map[string]http.HandlerFunc{
-		"GET /login":    auth.LoginTmpl,
-		"GET /register": auth.RegisterTmpl,
+		"GET /login":    handlers.LoginTmpl,
+		"GET /register": handlers.RegisterTmpl,
 		// "POST /api/login":    lh.Login,
 		// "POST /api/register": lh.Register,
 	}

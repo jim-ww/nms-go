@@ -1,4 +1,4 @@
-package utils
+package jwts
 
 import (
 	"crypto/hmac"

@@ -7,10 +7,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/jim-ww/nms-go/internal/auth/repository"
-	"github.com/jim-ww/nms-go/internal/user"
+	"github.com/jim-ww/nms-go/internal/features/auth/dtos"
+	"github.com/jim-ww/nms-go/internal/features/auth/repository"
+	"github.com/jim-ww/nms-go/internal/features/user"
 	"github.com/jim-ww/nms-go/pkg/config"
-	utils "github.com/jim-ww/nms-go/pkg/utils/jwts"
+	"github.com/jim-ww/nms-go/pkg/utils/jwts"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -52,7 +53,7 @@ func (service AuthService) NewToken(userID int64, role user.Role) (encodedToken 
 	}
 	claims := map[string]any{"session": token}
 
-	return utils.GenerateJWT(service.cfg.Secret, claims)
+	return jwts.GenerateJWT(service.cfg.Secret, claims)
 }
 
 func NewTokenCookie(jwtToken string) *http.Cookie {
@@ -78,11 +79,11 @@ func NewTokenCookie(jwtToken string) *http.Cookie {
 // 	return Session{}, nil
 // }
 
-func (srv *AuthService) RegisterUser(dto *RegisterDTO) (jwtToken string, validationErrors map[string][]string, err error) {
+func (srv *AuthService) RegisterUser(dto *dtos.RegisterDTO) (jwtToken string, validationErrors map[string][]string, err error) {
 	validationErrors = make(map[string][]string)
 
 	if validationErrors := ValidateRegisterDTO(dto); len(validationErrors) > 0 {
-		srv.logger.Info("field validation completed with errors:", validationErrors)
+		srv.logger.Info("field validation completed with errors:", slog.Any("validationErrors", validationErrors))
 		return "", validationErrors, nil
 	}
 
