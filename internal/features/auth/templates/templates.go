@@ -1,9 +1,5 @@
 package templates
 
-import "html/template"
-
-var LoginTmpl *template.Template = template.Must(template.ParseFiles("internal/features/auth/templates/auth.html"))
-
 type login struct {
 	Title                 string
 	Username              string

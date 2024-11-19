@@ -35,6 +35,14 @@ type AuthService struct {
 	repo   repository.AuthRepository
 }
 
+func NewAuthService(logger *slog.Logger, cfg *config.JWTTokenConfig, repo repository.AuthRepository) *AuthService {
+	return &AuthService{
+		logger: logger,
+		cfg:    cfg,
+		repo:   repo,
+	}
+}
+
 type token struct {
 	ExpirationTime int64 // TODO how to store expiration time in token?
 	IssuedAt       int64
