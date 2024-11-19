@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/jim-ww/nms-go/internal/features/auth/dtos"
-	"github.com/jim-ww/nms-go/internal/features/auth/repository"
 	"github.com/jim-ww/nms-go/internal/features/user"
 	"github.com/jim-ww/nms-go/pkg/config"
 	"github.com/jim-ww/nms-go/pkg/utils/jwts"
@@ -29,13 +28,19 @@ var (
 	ErrInvalidJWT = errors.New("failed to validate JWT")
 )
 
+type AuthRepository interface {
+	IsUsernameTaken(username string) (taken bool, err error)
+	IsEmailTaken(email string) (taken bool, err error)
+	CreateUser(username, email, hashedPassword string, role user.Role) (createdID int64, err error)
+}
+
 type AuthService struct {
 	logger *slog.Logger
 	cfg    *config.JWTTokenConfig
-	repo   repository.AuthRepository
+	repo   AuthRepository
 }
 
-func NewAuthService(logger *slog.Logger, cfg *config.JWTTokenConfig, repo repository.AuthRepository) *AuthService {
+func NewAuthService(logger *slog.Logger, cfg *config.JWTTokenConfig, repo AuthRepository) *AuthService {
 	return &AuthService{
 		logger: logger,
 		cfg:    cfg,
