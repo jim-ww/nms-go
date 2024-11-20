@@ -42,36 +42,36 @@ func GenerateJWT(secret string, claims map[string]any) (string, error) {
 	return jwt, nil
 }
 
-func VerifyJWT(secret string, token string) (claims map[string]any, isValid bool, err error) {
+func ValidateAndExtractPayload(secret, token string) (map[string]any, error) {
 	parts := strings.Split(token, ".")
 	if len(parts) != 3 {
-		return nil, false, ErrNotEnoughParts
+		return nil, ErrNotEnoughParts
 	}
-	headerPart := parts[0]
-	claimsPart := parts[1]
-	signaturePart := parts[2]
 
-	signatureInput := fmt.Sprintf("%s.%s", headerPart, claimsPart)
+	headerEncoded, claimsEncoded, signatureEncoded := parts[0], parts[1], parts[2]
+
+	signatureInput := fmt.Sprintf("%s.%s", headerEncoded, claimsEncoded)
 	h := hmac.New(sha256.New, []byte(secret))
-	if _, err = h.Write([]byte(signatureInput)); err != nil {
-		return nil, false, err
-	}
-
-	claims = make(map[string]any)
-	b, err := base64.RawURLEncoding.DecodeString(claimsPart)
+	_, err := h.Write([]byte(signatureInput))
 	if err != nil {
-		return nil, false, fmt.Errorf("failed to decode claims part: %w", err)
+		return nil, err
+	}
+	expectedSignature := base64.RawURLEncoding.EncodeToString(h.Sum(nil))
+
+	// validate signature
+	if !hmac.Equal([]byte(expectedSignature), []byte(signatureEncoded)) {
+		return nil, ErrInvalidSignature
 	}
 
-	if err = json.Unmarshal(b, &claims); err != nil {
-		return nil, false, fmt.Errorf("failed to unmarshal claims to JSON: %w", err)
+	claimsJSON, err := base64.RawURLEncoding.DecodeString(claimsEncoded)
+	if err != nil {
+		return nil, err
 	}
 
-	computedSignature := base64.RawURLEncoding.EncodeToString(h.Sum(nil))
-
-	if signaturePart == computedSignature {
-		return nil, false, ErrInvalidSignature
+	var claims map[string]any
+	if err := json.Unmarshal(claimsJSON, &claims); err != nil {
+		return nil, err
 	}
 
-	return claims, true, nil
+	return claims, nil
 }
