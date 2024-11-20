@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"html/template"
 	"log/slog"
 	"net/http"
@@ -30,18 +29,39 @@ func NewAuthHandler(userService *auth.AuthService, log *slog.Logger, tmplHandler
 	}
 }
 
-func (auth *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
+func (ah *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
-		handlers.RenderError(w, r, "Unable to parse form", http.StatusBadRequest)
+		ah.logger.Error("unable to parse form", sl.Err(err))
+		handlers.RenderError(w, r, "unable to parse form", http.StatusBadRequest)
 		return
 	}
 	dto := dtos.NewLoginDTO(r.FormValue("username"), r.FormValue("password"))
+	ah.logger.Debug("got login dto, executing authService.LoginUser()", sl.LoginDTO(dto))
 
-	fmt.Println(dto)
+	token, validationErrors, err := ah.authService.LoginUser(dto)
+	if err != nil {
+		ah.logger.Error("Failed to execute authService.LoginUser()", sl.Err(err))
+		handlers.RenderError(w, r, "Registration error", http.StatusInternalServerError)
+		return
+	}
+
+	// if has errors, return validation errors to form
+	if validationErrors.HasErrors() {
+		ah.logger.Debug("dto has validation errors, returning them to login form", slog.Any("validationErrors", validationErrors))
+		data := templates.NewLoginFormData(dto.Username, validationErrors.TranslateValidationErrors())
+		ah.tmplHandler.RenderTemplate(w, r, ah.tmpl, data)
+		return
+	}
+
+	// if no errors, set token cookie and redirect to home page
+	ah.logger.Debug("Setting token cookie")
+	http.SetCookie(w, auth.NewTokenCookie(token))
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 func (lh *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
+		lh.logger.Error("Unable to parse form", sl.Err(err))
 		handlers.RenderError(w, r, "Unable to parse form", http.StatusBadRequest)
 		return
 	}
@@ -55,15 +75,15 @@ func (lh *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// if no errors, set token cookie and redirect to home page
-	if !validationErrors.HasErrors() {
-		lh.logger.Debug("Setting token cookie")
-		http.SetCookie(w, auth.NewTokenCookie(token))
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+	// if has errors, return validation errors to form
+	if validationErrors.HasErrors() {
+		data := templates.NewRegisterFormData(dto.Username, dto.Email, validationErrors.TranslateValidationErrors())
+		lh.tmplHandler.RenderTemplate(w, r, lh.tmpl, data)
 		return
 	}
 
-	// if has errors, return validation errors to form
-	data := templates.NewRegisterFormData(dto.Username, dto.Email, validationErrors.TranslateValidationErrors())
-	lh.tmplHandler.RenderTemplate(w, r, lh.tmpl, data)
+	// if no errors, set token cookie and redirect to home page
+	lh.logger.Debug("Setting token cookie")
+	http.SetCookie(w, auth.NewTokenCookie(token))
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }

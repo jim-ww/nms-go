@@ -8,20 +8,22 @@ import (
 
 	"github.com/jim-ww/nms-go/internal/features/auth/dtos"
 	"github.com/jim-ww/nms-go/internal/features/user"
+	"github.com/jim-ww/nms-go/internal/features/user/repository"
 	"github.com/jim-ww/nms-go/pkg/config"
 	"github.com/jim-ww/nms-go/pkg/utils/jwts"
 	"github.com/jim-ww/nms-go/pkg/utils/loggers/sl"
 	"golang.org/x/crypto/bcrypt"
 )
 
-// TODO add password hashing
-// TODO implement more robust logging
-// TODO use context?
-// TODO make all SQL related stuff in readonly(if possible) transactions
+// TODO provide password hasher as dependency
+// TODO use context
+// TODO make all SQL related stuff in (if possible readonly) transactions
 
 const (
-	ErrUsernameTaken = "username already exists"
-	ErrEmailTaken    = "email already exists"
+	ErrUsernameTaken        FieldError = "username already exists"
+	ErrEmailTaken           FieldError = "email already exists"
+	ErrUsernameDoesNotExist FieldError = "username does not exist"
+	ErrInvalidPassword      FieldError = "invalid password"
 )
 
 var (
@@ -32,6 +34,7 @@ type AuthRepository interface {
 	IsUsernameTaken(username string) (taken bool, err error)
 	IsEmailTaken(email string) (taken bool, err error)
 	CreateUser(username, email, hashedPassword string, role user.Role) (createdID int64, err error)
+	GetUserByUsername(username string) (user user.User, err error)
 }
 
 type AuthService struct {
@@ -92,6 +95,46 @@ func NewTokenCookie(jwtToken string) *http.Cookie {
 //
 // 	return Session{}, nil
 // }
+
+func (srv *AuthService) LoginUser(dto *dtos.LoginDTO) (jwtToken string, validationErrors ValidationErrors, err error) {
+
+	if validationErrors = ValidateLoginDTO(dto); validationErrors.HasErrors() {
+		srv.logger.Debug("field validation completed with errors:", slog.Any("validationErrors", validationErrors))
+		return "", validationErrors, nil
+	}
+
+	srv.logger.Debug("Field validation completed")
+	srv.logger.Debug("Getting user by username")
+
+	user, err := srv.repo.GetUserByUsername(dto.Username)
+	if err != nil {
+
+		// TODO test
+		if errors.Is(err, repository.ErrUsernameDoesNotExist) {
+			srv.logger.Debug("Failed to get user by username", sl.Err(err))
+			validationErrors[UsernameField] = append(validationErrors[UsernameField], ErrUsernameDoesNotExist)
+			return "", validationErrors, nil
+		}
+
+		srv.logger.Error("Failed to get user by username", sl.Err(err))
+		return "", nil, err
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(dto.Password)); err != nil {
+		srv.logger.Debug("Password hash comparison failure", sl.Err(err))
+		validationErrors[PasswordField] = append(validationErrors[PasswordField], ErrInvalidPassword)
+		return "", validationErrors, nil
+	}
+
+	srv.logger.Debug("Generating JWT token")
+	jwtToken, err = srv.NewToken(user.ID, user.Role)
+	if err != nil {
+		srv.logger.Error("Failed to generate JWT token", sl.Err(err))
+		return "", nil, err
+	}
+
+	return jwtToken, nil, nil
+}
 
 func (srv *AuthService) RegisterUser(dto *dtos.RegisterDTO) (jwtToken string, validationErrors ValidationErrors, err error) {
 

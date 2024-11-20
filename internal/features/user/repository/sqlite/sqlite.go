@@ -2,10 +2,14 @@ package sqlite
 
 import (
 	"database/sql"
+	"errors"
 	"log/slog"
+	"time"
 
 	"github.com/jim-ww/nms-go/internal/features/user"
+	"github.com/jim-ww/nms-go/internal/features/user/repository"
 	"github.com/jim-ww/nms-go/pkg/utils/loggers/sl"
+	"github.com/mattn/go-sqlite3"
 )
 
 type UserRepository struct {
@@ -20,19 +24,34 @@ func NewUserRepository(logger *slog.Logger, db *sql.DB) *UserRepository {
 	}
 }
 
-func (repo UserRepository) Migrate() {
-	_, err := repo.db.Exec(`
+func (repo UserRepository) Migrate() error {
+	createTableSQL := `
 	CREATE TABLE IF NOT EXISTS users (
-    id INTEGER,
-    username TEXT(30) NOT NULL UNIQUE,
-    email TEXT(255) NOT NULL UNIQUE,
-    password TEXT(255) NOT NULL,
-    PRIMARY KEY(id AUTOINCREMENT)
-	)`)
-	if err != nil {
-		repo.logger.Error("failed to migrate table users, failed to execute query", sl.Err(err))
-		return
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			username TEXT(30) NOT NULL UNIQUE,
+			email TEXT(255) NOT NULL UNIQUE,
+			password TEXT(255) NOT NULL,
+			role TEXT(10) NOT NULL,
+			created_at DATETIME NOT NULL,
+			updated_at DATETIME NOT NULL
+	);`
+	createIndexUsernameSQL := `CREATE INDEX IF NOT EXISTS idx_username ON users(username);`
+	createIndexEmailSQL := `CREATE INDEX IF NOT EXISTS idx_email ON users(email);`
+
+	if _, err := repo.db.Exec(createTableSQL); err != nil {
+		repo.logger.Error("failed to migrate table users, failed to execute query 'createTableSQL'", sl.Err(err))
+		return err
 	}
+
+	if _, err := repo.db.Exec(createIndexUsernameSQL); err != nil {
+		repo.logger.Error("failed to migrate table users, failed to execute query 'createIndexUsernameSQL'", sl.Err(err))
+		return err
+	}
+	if _, err := repo.db.Exec(createIndexEmailSQL); err != nil {
+		repo.logger.Error("failed to migrate table users, failed to execute query 'createIndexEmailSQL'", sl.Err(err))
+		return err
+	}
+	return nil
 }
 
 func (repo UserRepository) IsUsernameTaken(username string) (taken bool, err error) {
@@ -76,16 +95,22 @@ func (repo UserRepository) IsEmailTaken(email string) (taken bool, err error) {
 }
 
 func (repo UserRepository) CreateUser(username, email, hashedPassword string, role user.Role) (createdID int64, err error) {
-	stmt, err := repo.db.Prepare(`INSERT INTO users (username, email, password) VALUES (?,?,?)`)
+	stmt, err := repo.db.Prepare(`INSERT INTO users (username, email, password, role, created_at, updated_at) VALUES (?,?,?,?,?,?)`)
 	if err != nil {
 		repo.logger.Error("Failed to prepare stmt CreateUser()", sl.Err(err))
 		return 0, err
 	}
 
-	result, err := stmt.Exec(username, email, hashedPassword)
+	now := time.Now()
+	result, err := stmt.Exec(username, email, hashedPassword, role, now, now)
 	if err != nil {
+
+		if sqliteErr, ok := err.(sqlite3.Error); ok && sqliteErr.Code == sqlite3.ErrConstraint {
+			repo.logger.Debug("Failed to execute stmt CreateUser(), user already exists", sl.Err(err))
+			return 0, repository.ErrUserAlreadyExists
+		}
+
 		repo.logger.Error("Failed to execute stmt CreateUser()", sl.Err(err))
-		// TODO handle UNIQUE CONSTRAINT err, return repository.ErrUserAlreadyExists
 		return 0, err
 	}
 
@@ -96,4 +121,28 @@ func (repo UserRepository) CreateUser(username, email, hashedPassword string, ro
 	}
 
 	return userID, nil
+}
+
+func (repo UserRepository) GetUserByUsername(username string) (user user.User, err error) {
+	repo.logger.Debug("executing GetUserByUsername() sqlite query...")
+	stmt, err := repo.db.Prepare(`SELECT id, username, email, password, role, created_at, updated_at FROM users WHERE username = ?`)
+	if err != nil {
+		repo.logger.Error("failed to prepare stmt GetUserByUsername()", sl.Err(err))
+		return user, err
+	}
+
+	if err = stmt.QueryRow(username).Scan(&user.ID, &user.Username, &user.Email, &user.Password, &user.Role, &user.CreatedAt, &user.UpdatedAt); err != nil {
+
+		// TODO test
+		if errors.Is(err, sql.ErrNoRows) {
+			repo.logger.Debug("username does not exist", sl.Err(err))
+			return user, repository.ErrUsernameDoesNotExist
+		}
+
+		repo.logger.Error("failed to execute stmt GetUserByUsername()", sl.Err(err))
+		return user, err
+	}
+	repo.logger.Debug("executed GetUserByUsername() sqlite query succesfully", slog.String("username", username))
+
+	return user, nil
 }
