@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"log"
 	"log/slog"
 	"net/http"
@@ -12,9 +13,9 @@ import (
 	userRepo "github.com/jim-ww/nms-go/internal/features/user/repository/sqlite"
 	"github.com/jim-ww/nms-go/pkg/config"
 	"github.com/jim-ww/nms-go/pkg/middleware"
-	"github.com/jim-ww/nms-go/pkg/sqlite"
 	tmpl "github.com/jim-ww/nms-go/pkg/utils/handlers"
 	sl "github.com/jim-ww/nms-go/pkg/utils/loggers/sl"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 func main() {
@@ -25,13 +26,17 @@ func main() {
 	logger := sl.SetupLogger(cfg.Env)
 	logger.Info("Initialized logger", slog.String("env", cfg.Env), slog.String("http-server.adress", cfg.Address))
 
-	storage := sqlite.NewSqliteStorage(cfg.StoragePath)
-	logger.Info("Initialized sqlite storage", slog.Any("storage-path", cfg.StoragePath))
+	db, err := sql.Open("sqlite3", cfg.StoragePath)
+	if err != nil {
+		logger.Info("Failed to initialize sqlite3 db")
+		panic(err)
+	}
+	logger.Info("Initialized sqlite db", slog.Any("storage-path", cfg.StoragePath))
 
-	userRepo := userRepo.NewUserRepository(storage)
+	userRepo := userRepo.NewUserRepository(logger, db)
 	logger.Debug("Initialized userRepository")
 
-	// userRepo.Migrate()
+	userRepo.Migrate()
 	logger.Debug("UserRepo migrated")
 
 	authService := auth.NewAuthService(logger, cfg.JWTTokenConfig, userRepo)

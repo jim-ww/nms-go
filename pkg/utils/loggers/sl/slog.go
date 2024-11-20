@@ -40,20 +40,15 @@ func Err(err error) slog.Attr {
 	}
 }
 
-func LoginDTO(loginDTO dtos.LoginDTO) slog.Attr {
-	return slog.Attr{
-		Key:   "username",
-		Value: slog.StringValue(loginDTO.Username),
-	}
+func RegisterDTO(dto *dtos.RegisterDTO) slog.Attr {
+	return slog.Group("register_dto",
+		slog.String("username", dto.Username),
+		slog.String("email", dto.Email),
+	)
 }
 
-func RegisterDTO(registerDTO dtos.RegisterDTO) []slog.Attr {
-	return []slog.Attr{{
-		Key:   "username",
-		Value: slog.StringValue(registerDTO.Username),
-	}, {
-		Key:   "registerDTO",
-		Value: slog.StringValue(registerDTO.Email),
-	},
-	}
+func LoginDTO(dto *dtos.LoginDTO) slog.Attr {
+	return slog.Group("login_dto",
+		slog.String("username", dto.Username),
+	)
 }

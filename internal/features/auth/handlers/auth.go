@@ -10,6 +10,7 @@ import (
 	"github.com/jim-ww/nms-go/internal/features/auth/dtos"
 	"github.com/jim-ww/nms-go/internal/features/auth/templates"
 	"github.com/jim-ww/nms-go/pkg/utils/handlers"
+	"github.com/jim-ww/nms-go/pkg/utils/loggers/sl"
 )
 
 type AuthHandler struct {
@@ -46,7 +47,7 @@ func (lh *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 	dto := dtos.NewRegisterDTO(r.FormValue("username"), r.FormValue("email"), r.FormValue("password"))
 
-	lh.logger.Info("got register dto", slog.String("dto-username", dto.Username), slog.String("dto-email", dto.Email))
+	lh.logger.Debug("got register dto, executing authService.RegisterUser()", sl.RegisterDTO(dto))
 
 	token, validationErrors, err := lh.authService.RegisterUser(dto)
 	if err != nil {
@@ -54,8 +55,15 @@ func (lh *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.SetCookie(w, auth.NewTokenCookie(token))
+	// if no errors, set token cookie and redirect to home page
+	if !validationErrors.HasErrors() {
+		lh.logger.Debug("Setting token cookie")
+		http.SetCookie(w, auth.NewTokenCookie(token))
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
 
-	data := templates.NewRegisterFormData(dto.Username, dto.Email, validationErrors)
+	// if has errors, return validation errors to form
+	data := templates.NewRegisterFormData(dto.Username, dto.Email, validationErrors.TranslateValidationErrors())
 	lh.tmplHandler.RenderTemplate(w, r, lh.tmpl, data)
 }

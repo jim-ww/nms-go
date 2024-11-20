@@ -2,7 +2,6 @@ package auth
 
 import (
 	"errors"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
@@ -11,6 +10,7 @@ import (
 	"github.com/jim-ww/nms-go/internal/features/user"
 	"github.com/jim-ww/nms-go/pkg/config"
 	"github.com/jim-ww/nms-go/pkg/utils/jwts"
+	"github.com/jim-ww/nms-go/pkg/utils/loggers/sl"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -75,7 +75,8 @@ func NewTokenCookie(jwtToken string) *http.Cookie {
 		Value:    jwtToken,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false, // TODO
+		Secure:   false,                    // TODO
+		SameSite: http.SameSiteDefaultMode, // TODO
 	}
 }
 
@@ -92,15 +93,14 @@ func NewTokenCookie(jwtToken string) *http.Cookie {
 // 	return Session{}, nil
 // }
 
-func (srv *AuthService) RegisterUser(dto *dtos.RegisterDTO) (jwtToken string, validationErrors map[string][]string, err error) {
-	validationErrors = make(map[string][]string)
+func (srv *AuthService) RegisterUser(dto *dtos.RegisterDTO) (jwtToken string, validationErrors ValidationErrors, err error) {
 
-	if validationErrors := ValidateRegisterDTO(dto); len(validationErrors) > 0 {
-		srv.logger.Info("field validation completed with errors:", slog.Any("validationErrors", validationErrors))
+	if validationErrors = ValidateRegisterDTO(dto); validationErrors.HasErrors() {
+		srv.logger.Debug("field validation completed with errors:", slog.Any("validationErrors", validationErrors))
 		return "", validationErrors, nil
 	}
 
-	srv.logger.Info("field validation completed, checking for existing username/email")
+	srv.logger.Debug("field validation completed, checking for existing username/email")
 
 	taken, err := srv.repo.IsUsernameTaken(dto.Username)
 	if err != nil {
@@ -108,6 +108,7 @@ func (srv *AuthService) RegisterUser(dto *dtos.RegisterDTO) (jwtToken string, va
 	} else if taken {
 		validationErrors[UsernameField] = append(validationErrors[UsernameField], ErrUsernameTaken)
 	}
+	srv.logger.Debug("username validated")
 
 	taken, err = srv.repo.IsEmailTaken(dto.Email)
 	if err != nil {
@@ -116,28 +117,35 @@ func (srv *AuthService) RegisterUser(dto *dtos.RegisterDTO) (jwtToken string, va
 		validationErrors[EmailField] = append(validationErrors[EmailField], ErrEmailTaken)
 	}
 
-	// TODO test
-	fmt.Println("val errors:", validationErrors, "validation errors len:", len(validationErrors))
-	if len(validationErrors) > 0 {
+	srv.logger.Debug("email validated")
+
+	if validationErrors.HasErrors() {
+		srv.logger.Debug("field validation completed with errors:", slog.Any("validationErrors", validationErrors))
 		return "", validationErrors, nil
 	}
 
-	srv.logger.Info("field validation completed")
+	srv.logger.Debug("field validation completed")
 
+	srv.logger.Debug("Generating hashed password")
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(dto.Password), bcrypt.DefaultCost)
 	if err != nil {
+		srv.logger.Error("Failed to generate hash for password", sl.Err(err))
 		return "", nil, err
 	}
 	dto.Password = string(hashedPassword)
-	srv.logger.Info("User attemt to register:", slog.Any("registerDTO:", dto))
+	srv.logger.Debug("User attemt to register:", sl.RegisterDTO(dto))
 
+	srv.logger.Debug("Creating user with user repository")
 	userID, err := srv.repo.CreateUser(dto.Username, dto.Email, string(hashedPassword), user.ROLE_USER)
 	if err != nil {
+		srv.logger.Error("Failed to create new user", sl.Err(err))
 		return "", nil, err
 	}
 
+	srv.logger.Debug("Generating JWT token")
 	jwtToken, err = srv.NewToken(userID, user.ROLE_USER)
 	if err != nil {
+		srv.logger.Error("Failed to generate JWT token", sl.Err(err))
 		return "", nil, err
 	}
 

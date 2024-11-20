@@ -7,35 +7,58 @@ import (
 	"github.com/jim-ww/nms-go/internal/features/auth/dtos"
 )
 
-const (
-	ErrUsernameLength = "username length must be between 3 and 30 characters"
-	ErrPasswordLength = "password length must be between 3 and 255 characters"
-	ErrEmailLength    = "email length must be between 3 and 255 characters"
-	ErrEmailInvalid   = "invalid email"
-)
+type FieldError string
 
 const (
-	UsernameField = "username"
-	EmailField    = "email"
-	PasswordField = "password"
+	ErrUsernameLength FieldError = "username length must be between 3 and 30 characters"
+	ErrPasswordLength FieldError = "password length must be between 3 and 255 characters"
+	ErrEmailLength    FieldError = "email length must be between 3 and 255 characters"
+	ErrEmailInvalid   FieldError = "invalid email"
 )
 
-func ValidateLoginDTO(dto *dtos.LoginDTO) map[string][]string {
-	errs := make(map[string][]string, 2)
+type Field string
+
+const (
+	UsernameField Field = "username"
+	EmailField    Field = "email"
+	PasswordField Field = "password"
+)
+
+type ValidationErrors map[Field][]FieldError
+
+func (vErrs ValidationErrors) HasErrors() bool {
+	return len(vErrs[UsernameField]) > 0 || len(vErrs[EmailField]) > 0 || len(vErrs[PasswordField]) > 0
+}
+
+func (errors ValidationErrors) TranslateValidationErrors() map[string][]string {
+	translated := make(map[string][]string, 3)
+
+	for field, errs := range errors {
+		key := string(field)
+		for _, err := range errs {
+			translated[key] = append(translated[key], string(err)) // Convert FieldError to string
+		}
+	}
+
+	return translated
+}
+
+func ValidateLoginDTO(dto *dtos.LoginDTO) ValidationErrors {
+	errs := make(ValidationErrors, 2)
 	errs[UsernameField] = validateUsername(dto.Username)
 	errs[PasswordField] = validatePassword(dto.Password)
 	return errs
 }
 
-func ValidateRegisterDTO(dto *dtos.RegisterDTO) map[string][]string {
-	errs := make(map[string][]string, 3)
+func ValidateRegisterDTO(dto *dtos.RegisterDTO) ValidationErrors {
+	errs := make(ValidationErrors, 3)
 	errs[UsernameField] = validateUsername(dto.Username)
 	errs[EmailField] = validateEmail(dto.Email)
 	errs[PasswordField] = validatePassword(dto.Password)
 	return errs
 }
 
-func validateUsername(username string) (errs []string) {
+func validateUsername(username string) (errs []FieldError) {
 	len := utf8.RuneCountInString(username)
 	if len < 3 || len > 30 {
 		errs = append(errs, ErrUsernameLength)
@@ -43,7 +66,7 @@ func validateUsername(username string) (errs []string) {
 	return errs
 }
 
-func validateEmail(email string) (errs []string) {
+func validateEmail(email string) (errs []FieldError) {
 	re := regexp.MustCompile(`^[\w\-\.]+@([\w-]+\.)+[\w-]{2,}$`)
 	if !re.MatchString(email) {
 		errs = append(errs, ErrEmailInvalid)
@@ -55,7 +78,7 @@ func validateEmail(email string) (errs []string) {
 	return errs
 }
 
-func validatePassword(password string) (errs []string) {
+func validatePassword(password string) (errs []FieldError) {
 	len := utf8.RuneCountInString(password)
 	if len < 3 || len > 255 {
 		errs = append(errs, ErrPasswordLength)
