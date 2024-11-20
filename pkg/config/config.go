@@ -9,8 +9,8 @@ import (
 )
 
 type JWTTokenConfig struct {
-	Secret         string        `json:"secret"`
-	ExpirationTime time.Duration `json:"expiration_time"` // TODO implement duration values reader?
+	Secret             string        `json:"secret"`
+	ExpirationDuration time.Duration `json:"expiration_duration"` // TODO
 }
 
 type Config struct {

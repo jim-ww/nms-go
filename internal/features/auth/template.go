@@ -1,4 +1,4 @@
-package templates
+package auth
 
 type login struct {
 	Title                 string

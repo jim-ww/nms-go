@@ -3,14 +3,12 @@ package auth
 import (
 	"errors"
 	"log/slog"
-	"net/http"
-	"time"
 
+	"github.com/jim-ww/nms-go/internal/features/auth"
 	"github.com/jim-ww/nms-go/internal/features/auth/dtos"
+	"github.com/jim-ww/nms-go/internal/features/auth/services/jwt"
 	"github.com/jim-ww/nms-go/internal/features/user"
 	"github.com/jim-ww/nms-go/internal/features/user/repository"
-	"github.com/jim-ww/nms-go/pkg/config"
-	"github.com/jim-ww/nms-go/pkg/utils/jwts"
 	"github.com/jim-ww/nms-go/pkg/utils/loggers/sl"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -20,14 +18,10 @@ import (
 // TODO make all SQL related stuff in (if possible readonly) transactions
 
 const (
-	ErrUsernameTaken        FieldError = "username already exists"
-	ErrEmailTaken           FieldError = "email already exists"
-	ErrUsernameDoesNotExist FieldError = "username does not exist"
-	ErrInvalidPassword      FieldError = "invalid password"
-)
-
-var (
-	ErrInvalidJWT = errors.New("failed to validate JWT")
+	ErrUsernameTaken        auth.FieldError = "username already exists"
+	ErrEmailTaken           auth.FieldError = "email already exists"
+	ErrUsernameDoesNotExist auth.FieldError = "username does not exist"
+	ErrInvalidPassword      auth.FieldError = "invalid password"
 )
 
 type AuthRepository interface {
@@ -39,66 +33,21 @@ type AuthRepository interface {
 
 type AuthService struct {
 	logger *slog.Logger
-	cfg    *config.JWTTokenConfig
+	jwt    *jwt.JWTService
 	repo   AuthRepository
 }
 
-func NewAuthService(logger *slog.Logger, cfg *config.JWTTokenConfig, repo AuthRepository) *AuthService {
+func New(logger *slog.Logger, jwtService *jwt.JWTService, repo AuthRepository) *AuthService {
 	return &AuthService{
 		logger: logger,
-		cfg:    cfg,
+		jwt:    jwtService,
 		repo:   repo,
 	}
 }
 
-type token struct {
-	ExpirationTime int64 // TODO how to store expiration time in token?
-	IssuedAt       int64
-	Subject        string
-	UserId         int64
-	RoleName       string // TODO use 'Role' type here?
-}
+func (srv *AuthService) LoginUser(dto *dtos.LoginDTO) (jwtToken string, validationErrors auth.ValidationErrors, err error) {
 
-func (service AuthService) NewToken(userID int64, role user.Role) (encodedToken string, err error) {
-	token := token{
-		ExpirationTime: service.cfg.ExpirationTime.Microseconds(),
-		IssuedAt:       time.Now().Unix(),
-		Subject:        "user-auth",
-		UserId:         userID,
-		RoleName:       string(role), // TODO
-	}
-	claims := map[string]any{"session": token}
-
-	return jwts.GenerateJWT(service.cfg.Secret, claims)
-}
-
-func NewTokenCookie(jwtToken string) *http.Cookie {
-	return &http.Cookie{
-		Name:     "jwt-token",
-		Value:    jwtToken,
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   false,                    // TODO
-		SameSite: http.SameSiteDefaultMode, // TODO
-	}
-}
-
-// func DecodeAndVerifyJWTSession(jwtToken, secret string) (session Session, err error) {
-//
-// 	parts := strings.Split(jwtToken, ".")
-// 	if len(parts) != 3 {
-// 		return session, ErrInvalidJWT
-// 	}
-// 	headerPart := parts[0]
-// 	claimsPart := parts[1]
-// 	signaturePart := parts[2]
-//
-// 	return Session{}, nil
-// }
-
-func (srv *AuthService) LoginUser(dto *dtos.LoginDTO) (jwtToken string, validationErrors ValidationErrors, err error) {
-
-	if validationErrors = ValidateLoginDTO(dto); validationErrors.HasErrors() {
+	if validationErrors = auth.ValidateLoginDTO(dto); validationErrors.HasErrors() {
 		srv.logger.Debug("field validation completed with errors:", slog.Any("validationErrors", validationErrors))
 		return "", validationErrors, nil
 	}
@@ -109,10 +58,9 @@ func (srv *AuthService) LoginUser(dto *dtos.LoginDTO) (jwtToken string, validati
 	user, err := srv.repo.GetUserByUsername(dto.Username)
 	if err != nil {
 
-		// TODO test
 		if errors.Is(err, repository.ErrUsernameDoesNotExist) {
 			srv.logger.Debug("Failed to get user by username", sl.Err(err))
-			validationErrors[UsernameField] = append(validationErrors[UsernameField], ErrUsernameDoesNotExist)
+			validationErrors[auth.UsernameField] = append(validationErrors[auth.UsernameField], ErrUsernameDoesNotExist)
 			return "", validationErrors, nil
 		}
 
@@ -122,12 +70,12 @@ func (srv *AuthService) LoginUser(dto *dtos.LoginDTO) (jwtToken string, validati
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(dto.Password)); err != nil {
 		srv.logger.Debug("Password hash comparison failure", sl.Err(err))
-		validationErrors[PasswordField] = append(validationErrors[PasswordField], ErrInvalidPassword)
+		validationErrors[auth.PasswordField] = append(validationErrors[auth.PasswordField], ErrInvalidPassword)
 		return "", validationErrors, nil
 	}
 
 	srv.logger.Debug("Generating JWT token")
-	jwtToken, err = srv.NewToken(user.ID, user.Role)
+	jwtToken, err = srv.jwt.GenerateToken(user.ID, user.Role)
 	if err != nil {
 		srv.logger.Error("Failed to generate JWT token", sl.Err(err))
 		return "", nil, err
@@ -136,9 +84,9 @@ func (srv *AuthService) LoginUser(dto *dtos.LoginDTO) (jwtToken string, validati
 	return jwtToken, nil, nil
 }
 
-func (srv *AuthService) RegisterUser(dto *dtos.RegisterDTO) (jwtToken string, validationErrors ValidationErrors, err error) {
+func (srv *AuthService) RegisterUser(dto *dtos.RegisterDTO) (jwtToken string, validationErrors auth.ValidationErrors, err error) {
 
-	if validationErrors = ValidateRegisterDTO(dto); validationErrors.HasErrors() {
+	if validationErrors = auth.ValidateRegisterDTO(dto); validationErrors.HasErrors() {
 		srv.logger.Debug("field validation completed with errors:", slog.Any("validationErrors", validationErrors))
 		return "", validationErrors, nil
 	}
@@ -149,7 +97,7 @@ func (srv *AuthService) RegisterUser(dto *dtos.RegisterDTO) (jwtToken string, va
 	if err != nil {
 		return "", nil, err
 	} else if taken {
-		validationErrors[UsernameField] = append(validationErrors[UsernameField], ErrUsernameTaken)
+		validationErrors[auth.UsernameField] = append(validationErrors[auth.UsernameField], ErrUsernameTaken)
 	}
 	srv.logger.Debug("username validated")
 
@@ -157,7 +105,7 @@ func (srv *AuthService) RegisterUser(dto *dtos.RegisterDTO) (jwtToken string, va
 	if err != nil {
 		return "", nil, err
 	} else if taken {
-		validationErrors[EmailField] = append(validationErrors[EmailField], ErrEmailTaken)
+		validationErrors[auth.EmailField] = append(validationErrors[auth.EmailField], ErrEmailTaken)
 	}
 
 	srv.logger.Debug("email validated")
@@ -186,7 +134,7 @@ func (srv *AuthService) RegisterUser(dto *dtos.RegisterDTO) (jwtToken string, va
 	}
 
 	srv.logger.Debug("Generating JWT token")
-	jwtToken, err = srv.NewToken(userID, user.ROLE_USER)
+	jwtToken, err = srv.jwt.GenerateToken(userID, user.ROLE_USER)
 	if err != nil {
 		srv.logger.Error("Failed to generate JWT token", sl.Err(err))
 		return "", nil, err

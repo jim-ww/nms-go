@@ -7,19 +7,21 @@ import (
 
 	"github.com/jim-ww/nms-go/internal/features/auth"
 	"github.com/jim-ww/nms-go/internal/features/auth/dtos"
-	"github.com/jim-ww/nms-go/internal/features/auth/templates"
+	authService "github.com/jim-ww/nms-go/internal/features/auth/services/auth"
+	jwtService "github.com/jim-ww/nms-go/internal/features/auth/services/jwt"
 	"github.com/jim-ww/nms-go/pkg/utils/handlers"
 	"github.com/jim-ww/nms-go/pkg/utils/loggers/sl"
 )
 
 type AuthHandler struct {
-	authService *auth.AuthService
+	authService *authService.AuthService
+	jwtService  *jwtService.JWTService
 	logger      *slog.Logger
 	tmpl        *template.Template
 	tmplHandler *handlers.TmplHandler
 }
 
-func NewAuthHandler(userService *auth.AuthService, log *slog.Logger, tmplHandler *handlers.TmplHandler) *AuthHandler {
+func NewAuthHandler(userService *authService.AuthService, log *slog.Logger, tmplHandler *handlers.TmplHandler) *AuthHandler {
 	templ := template.Must(template.ParseFiles("web/templates/auth.html"))
 	return &AuthHandler{
 		authService: userService,
@@ -48,14 +50,14 @@ func (ah *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	// if has errors, return validation errors to form
 	if validationErrors.HasErrors() {
 		ah.logger.Debug("dto has validation errors, returning them to login form", slog.Any("validationErrors", validationErrors))
-		data := templates.NewLoginFormData(dto.Username, validationErrors.TranslateValidationErrors())
+		data := auth.NewLoginFormData(dto.Username, validationErrors.TranslateValidationErrors())
 		ah.tmplHandler.RenderTemplate(w, r, ah.tmpl, data)
 		return
 	}
 
 	// if no errors, set token cookie and redirect to home page
 	ah.logger.Debug("Setting token cookie")
-	http.SetCookie(w, auth.NewTokenCookie(token))
+	http.SetCookie(w, ah.jwtService.NewTokenCookie(token))
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
@@ -77,13 +79,13 @@ func (lh *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	// if has errors, return validation errors to form
 	if validationErrors.HasErrors() {
-		data := templates.NewRegisterFormData(dto.Username, dto.Email, validationErrors.TranslateValidationErrors())
+		data := auth.NewRegisterFormData(dto.Username, dto.Email, validationErrors.TranslateValidationErrors())
 		lh.tmplHandler.RenderTemplate(w, r, lh.tmpl, data)
 		return
 	}
 
 	// if no errors, set token cookie and redirect to home page
 	lh.logger.Debug("Setting token cookie")
-	http.SetCookie(w, auth.NewTokenCookie(token))
+	http.SetCookie(w, lh.jwtService.NewTokenCookie(token))
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
