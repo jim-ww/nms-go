@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/jim-ww/nms-go/internal/features/auth/templates"
+	"github.com/jim-ww/nms-go/internal/features/auth"
 	"github.com/jim-ww/nms-go/pkg/utils/handlers"
 )
 
@@ -15,8 +15,8 @@ type AuthFormHandler struct {
 	tmplHandler *handlers.TmplHandler
 }
 
-var loginData = templates.NewLoginFormData("", map[string][]string{})
-var registerData = templates.NewRegisterFormData("", "", map[string][]string{})
+var loginData = auth.NewLoginFormData("", map[string][]string{})
+var registerData = auth.NewRegisterFormData("", "", map[string][]string{})
 
 func NewAuthFormHandler(logger *slog.Logger, tmplHandler *handlers.TmplHandler) *AuthFormHandler {
 	templatePath := "web/templates/auth.html"

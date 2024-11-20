@@ -8,8 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jim-ww/nms-go/internal/features/auth"
 	"github.com/jim-ww/nms-go/internal/features/auth/handlers"
+	authMiddleware "github.com/jim-ww/nms-go/internal/features/auth/middleware"
+	authService "github.com/jim-ww/nms-go/internal/features/auth/services/auth"
+	"github.com/jim-ww/nms-go/internal/features/auth/services/jwt"
+	"github.com/jim-ww/nms-go/internal/features/note"
 	userRepo "github.com/jim-ww/nms-go/internal/features/user/repository/sqlite"
 	"github.com/jim-ww/nms-go/pkg/config"
 	"github.com/jim-ww/nms-go/pkg/middleware"
@@ -21,7 +24,7 @@ import (
 func main() {
 
 	cfg := config.MustLoad()
-	cfg.JWTTokenConfig.ExpirationTime = time.Duration(time.Hour * 24 * 7) // TODO
+	cfg.JWTTokenConfig.ExpirationDuration = time.Duration(time.Hour * 24 * 7) // TODO
 
 	logger := sl.SetupLogger(cfg.Env)
 	logger.Info("Initialized logger", slog.String("env", cfg.Env), slog.String("http-server.adress", cfg.Address))
@@ -39,24 +42,31 @@ func main() {
 	userRepo.Migrate()
 	logger.Debug("UserRepo migrated")
 
-	authService := auth.NewAuthService(logger, cfg.JWTTokenConfig, userRepo)
+	jwtService := jwt.New(logger, cfg.JWTTokenConfig)
+	logger.Debug("Initialized jwtService")
+
+	authService := authService.New(logger, jwtService, userRepo)
 	logger.Debug("Initialized authService")
 
 	tmplHandler := tmpl.NewTmplHandler(logger)
 	logger.Debug("Initialized tmplHandler")
 
-	lah := handlers.NewAuthFormHandler(logger, tmplHandler)
-	logger.Debug("Initialized authFormHandler")
+	loginFormHandler := handlers.NewAuthFormHandler(logger, tmplHandler)
+	logger.Debug("Initialized loginFormHandler")
 
-	lh := handlers.NewAuthHandler(authService, logger, tmplHandler)
+	authHandler := handlers.NewAuthHandler(authService, logger, tmplHandler)
 	logger.Debug("Initialized authHandler")
+
+	noteHandler := note.NewHandler(logger)
+	logger.Debug("Initialized noteHandler")
 
 	mux := http.NewServeMux()
 	routes := map[string]http.HandlerFunc{
-		"GET /login":         lah.LoginTmpl,
-		"GET /register":      lah.RegisterTmpl,
-		"POST /api/login":    lh.Login,
-		"POST /api/register": lh.Register,
+		"GET /login":         loginFormHandler.LoginTmpl,
+		"GET /register":      loginFormHandler.RegisterTmpl,
+		"POST /api/login":    authHandler.Login,
+		"POST /api/register": authHandler.Register,
+		"GET /":              noteHandler.Dashboard,
 	}
 
 	for path, handler := range routes {
@@ -70,6 +80,8 @@ func main() {
 	logger.Debug("static mux http routes set")
 
 	htmxMiddleware := middleware.NewHTMXMiddlewareBaseWrapper(logger)
+	authMiddleware := authMiddleware.New(logger, jwtService)
+
 	logger.Debug("Initialized htmxMiddlewareBaseWrapper")
 
 	baseTemplate := htmxMiddleware.WrapHTMXWithBaseTemplate(mux)
@@ -85,5 +97,8 @@ func main() {
 		}
 	})
 
-	log.Fatal(http.ListenAndServe(cfg.HTTPServer.Address, middleware.Logger(mainHandler)))
+	loggedMux := middleware.Logger(mainHandler)
+	protectedMux := authMiddleware.Handler(loggedMux)
+
+	log.Fatal(http.ListenAndServe(cfg.HTTPServer.Address, protectedMux))
 }
