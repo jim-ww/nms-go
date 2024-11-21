@@ -7,13 +7,12 @@ import (
 	"github.com/jim-ww/nms-go/internal/features/auth"
 	"github.com/jim-ww/nms-go/internal/features/auth/dtos"
 	"github.com/jim-ww/nms-go/internal/features/auth/services/jwt"
+	"github.com/jim-ww/nms-go/internal/features/auth/services/password"
 	"github.com/jim-ww/nms-go/internal/features/user"
 	"github.com/jim-ww/nms-go/internal/features/user/repository"
 	"github.com/jim-ww/nms-go/pkg/utils/loggers/sl"
-	"golang.org/x/crypto/bcrypt"
 )
 
-// TODO provide password hasher as dependency
 // TODO use context
 // TODO make all SQL related stuff in (if possible readonly) transactions
 
@@ -32,16 +31,18 @@ type AuthRepository interface {
 }
 
 type AuthService struct {
-	logger *slog.Logger
-	jwt    *jwt.JWTService
-	repo   AuthRepository
+	logger    *slog.Logger
+	jwt       *jwt.JWTService
+	pwdHasher password.PasswordHasher
+	repo      AuthRepository
 }
 
-func New(logger *slog.Logger, jwtService *jwt.JWTService, repo AuthRepository) *AuthService {
+func New(logger *slog.Logger, jwtService *jwt.JWTService, passwordHasher password.PasswordHasher, repo AuthRepository) *AuthService {
 	return &AuthService{
-		logger: logger,
-		jwt:    jwtService,
-		repo:   repo,
+		logger:    logger,
+		jwt:       jwtService,
+		pwdHasher: passwordHasher,
+		repo:      repo,
 	}
 }
 
@@ -68,7 +69,7 @@ func (srv *AuthService) LoginUser(dto *dtos.LoginDTO) (jwtToken string, validati
 		return "", nil, err
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(dto.Password)); err != nil {
+	if err := srv.pwdHasher.ComparePasswords(user.Password, dto.Password); err != nil {
 		srv.logger.Debug("Password hash comparison failure", sl.Err(err))
 		validationErrors[auth.PasswordField] = append(validationErrors[auth.PasswordField], ErrInvalidPassword)
 		return "", validationErrors, nil
@@ -118,7 +119,7 @@ func (srv *AuthService) RegisterUser(dto *dtos.RegisterDTO) (jwtToken string, va
 	srv.logger.Debug("field validation completed")
 
 	srv.logger.Debug("Generating hashed password")
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(dto.Password), bcrypt.DefaultCost)
+	hashedPassword, err := srv.pwdHasher.HashPassword(dto.Password)
 	if err != nil {
 		srv.logger.Error("Failed to generate hash for password", sl.Err(err))
 		return "", nil, err

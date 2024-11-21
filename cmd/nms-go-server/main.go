@@ -11,6 +11,7 @@ import (
 	authMiddleware "github.com/jim-ww/nms-go/internal/features/auth/middleware"
 	authService "github.com/jim-ww/nms-go/internal/features/auth/services/auth"
 	"github.com/jim-ww/nms-go/internal/features/auth/services/jwt"
+	"github.com/jim-ww/nms-go/internal/features/auth/services/password/bcrypt"
 	"github.com/jim-ww/nms-go/internal/features/note"
 	userRepo "github.com/jim-ww/nms-go/internal/features/user/repository/sqlite"
 	"github.com/jim-ww/nms-go/pkg/config"
@@ -23,7 +24,7 @@ import (
 func main() {
 
 	cfg := config.MustLoad()
-	cfg.JWTTokenConfig.ExpirationDuration = time.Duration(time.Hour * 24 * 7) // TODO
+	cfg.JWTTokenConfig.ExpirationDuration = time.Duration(time.Hour * 24 * 7) // TODO read from config
 
 	logger := sl.SetupLogger(cfg.Env)
 	logger.Info("Initialized logger", slog.String("env", cfg.Env), slog.String("http-server.adress", cfg.Address))
@@ -44,7 +45,8 @@ func main() {
 	jwtService := jwt.New(logger, cfg.JWTTokenConfig)
 	logger.Debug("Initialized jwtService")
 
-	authService := authService.New(logger, jwtService, userRepo)
+	passwordHasher := bcrypt.New()
+	authService := authService.New(logger, jwtService, passwordHasher, userRepo)
 	logger.Debug("Initialized authService")
 
 	tmplHandler := tmpl.NewTmplHandler(logger)
