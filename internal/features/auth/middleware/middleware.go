@@ -14,28 +14,33 @@ type AccessLevel int
 
 const (
 	AllowUnauthorized AccessLevel = iota
+	OnlyUnauthorized
 	OnlyAuthorized
 	OnlyAdmins
 )
 
 var AccessLevelString = map[AccessLevel]string{
 	AllowUnauthorized: "AllowUnauthorized",
+	OnlyUnauthorized:  "OnlyUnauthorized",
 	OnlyAuthorized:    "OnlyAuthorized",
 	OnlyAdmins:        "OnlyAdmins",
 }
 
 var RouteAccessLevels = map[string]AccessLevel{
-	"/login":                             AllowUnauthorized,
-	"/register":                          AllowUnauthorized,
-	"/api/login":                         AllowUnauthorized,
-	"/api/register":                      AllowUnauthorized,
+	"/login":                             OnlyUnauthorized,
+	"/register":                          OnlyUnauthorized,
+	"/api/login":                         OnlyUnauthorized,
+	"/api/register":                      OnlyUnauthorized,
 	"/web/static/htmx-2.0.3/htmx.min.js": AllowUnauthorized,
 	"/web/static/tailwind.css":           AllowUnauthorized,
 	"/favicon.ico":                       AllowUnauthorized,
+	"/error":                             AllowUnauthorized,
 	"/":                                  OnlyAuthorized,
 	"/api/user":                          OnlyAuthorized,
+	"/api/notes":                         OnlyAuthorized,
 	"/api/logout":                        OnlyAuthorized,
 	"/admin":                             OnlyAdmins,
+	"/api/admin/users":                   OnlyAdmins,
 }
 
 type AuthMiddleware struct {
@@ -83,9 +88,11 @@ func (am AuthMiddleware) Handler(next http.Handler) http.Handler {
 		}
 
 		if IsAllowed(token.Role, accessLevel) {
-			am.logger.Debug("route is allowed, returning 200", slog.String("route", r.URL.Path), slog.String("route-access", AccessLevelString[accessLevel]))
+			am.logger.Debug("route is allowed, returning 200", slog.Any("role", token.Role), slog.String("route", r.URL.Path), slog.String("route-access", AccessLevelString[accessLevel]))
 			next.ServeHTTP(w, r)
 			return
+		} else if accessLevel == OnlyUnauthorized {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
 		}
 
 		am.logger.Debug("route is not allowed, returning 401", slog.String("route", r.URL.Path), slog.String("route-access", AccessLevelString[accessLevel]))
@@ -102,7 +109,7 @@ func (am AuthMiddleware) handleUnauthorized(next http.Handler) http.Handler {
 			return
 		}
 
-		if accessLevel == AllowUnauthorized {
+		if accessLevel == AllowUnauthorized || accessLevel == OnlyUnauthorized {
 			am.logger.Debug("route is AllowUnauthorized, returning 200", slog.String("route", r.URL.Path), slog.String("route-access", AccessLevelString[accessLevel]))
 			next.ServeHTTP(w, r)
 			return
@@ -116,11 +123,18 @@ func (am AuthMiddleware) handleUnauthorized(next http.Handler) http.Handler {
 func IsAllowed(role user.Role, access AccessLevel) bool {
 	switch role {
 	case user.ROLE_ADMIN:
-		return true
+		switch access {
+		case OnlyUnauthorized:
+			return false
+		default:
+			return true
+		}
 	case user.ROLE_USER:
 		switch access {
 		case AllowUnauthorized:
 			return true
+		case OnlyUnauthorized:
+			return false
 		case OnlyAuthorized:
 			return true
 		case OnlyAdmins:

@@ -37,7 +37,7 @@ func (srv JWTService) GenerateToken(userID int64, role user.Role) (encodedToken 
 		UserId:         userID,
 		Role:           role,
 	}
-	claims := map[string]any{"session": token}
+	claims := map[string]any{"token": token}
 
 	return jwts.GenerateJWT(srv.cfg.Secret, claims)
 }
@@ -48,8 +48,8 @@ func (srv JWTService) NewTokenCookie(jwtToken string) *http.Cookie {
 		Value:    jwtToken,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false,                    // TODO
-		SameSite: http.SameSiteDefaultMode, // TODO
+		Secure:   false,
+		SameSite: http.SameSiteStrictMode,
 	}
 }
 

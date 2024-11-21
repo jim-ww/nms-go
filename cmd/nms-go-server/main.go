@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"log"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -54,7 +53,7 @@ func main() {
 	loginFormHandler := handlers.NewAuthFormHandler(logger, tmplHandler)
 	logger.Debug("Initialized loginFormHandler")
 
-	authHandler := handlers.NewAuthHandler(authService, logger, tmplHandler)
+	authHandler := handlers.NewAuthHandler(logger, authService, jwtService, tmplHandler)
 	logger.Debug("Initialized authHandler")
 
 	noteHandler := note.NewHandler(logger)
@@ -100,5 +99,8 @@ func main() {
 	loggedMux := middleware.Logger(mainHandler)
 	protectedMux := authMiddleware.Handler(loggedMux)
 
-	log.Fatal(http.ListenAndServe(cfg.HTTPServer.Address, protectedMux))
+	logger.Info("Starting server...")
+	if err = http.ListenAndServe(cfg.HTTPServer.Address, protectedMux); err != nil {
+		logger.Error("Failed to start http server", slog.String("address", cfg.HTTPServer.Address), sl.Err(err))
+	}
 }

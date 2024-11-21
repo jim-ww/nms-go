@@ -21,11 +21,12 @@ type AuthHandler struct {
 	tmplHandler *handlers.TmplHandler
 }
 
-func NewAuthHandler(userService *authService.AuthService, log *slog.Logger, tmplHandler *handlers.TmplHandler) *AuthHandler {
+func NewAuthHandler(log *slog.Logger, userService *authService.AuthService, jwtService *jwtService.JWTService, tmplHandler *handlers.TmplHandler) *AuthHandler {
 	templ := template.Must(template.ParseFiles("web/templates/auth.html"))
 	return &AuthHandler{
-		authService: userService,
 		logger:      log,
+		authService: userService,
+		jwtService:  jwtService,
 		tmpl:        templ,
 		tmplHandler: tmplHandler,
 	}
@@ -58,6 +59,7 @@ func (ah *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	// if no errors, set token cookie and redirect to home page
 	ah.logger.Debug("Setting token cookie")
 	http.SetCookie(w, ah.jwtService.NewTokenCookie(token))
+	ah.logger.Debug("Redirecting user to dashboard")
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
@@ -87,5 +89,6 @@ func (lh *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	// if no errors, set token cookie and redirect to home page
 	lh.logger.Debug("Setting token cookie")
 	http.SetCookie(w, lh.jwtService.NewTokenCookie(token))
+	lh.logger.Debug("Redirecting user to dashboard")
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }

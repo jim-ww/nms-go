@@ -18,48 +18,48 @@ type Payload struct {
 func MapToPayload(data map[string]any) (*Payload, error) {
 	payload := &Payload{}
 
-	// Parse ExpirationTime
-	if exp, ok := data["ExpirationTime"].(string); ok {
+	sessionData, ok := data["token"].(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("token data missing or invalid")
+	}
+
+	if exp, ok := sessionData["ExpirationTime"].(string); ok {
 		parsedTime, err := time.Parse(time.RFC3339, exp)
 		if err != nil {
-			return &Payload{}, fmt.Errorf("invalid expiration time: %w", err)
+			return nil, fmt.Errorf("invalid expiration time: %w", err)
 		}
 		payload.ExpirationTime = parsedTime
 	} else {
-		return &Payload{}, fmt.Errorf("expiration time missing or invalid")
+		return nil, fmt.Errorf("expiration time missing or invalid")
 	}
 
-	// Parse IssuedAt
-	if issuedAt, ok := data["IssuedAt"].(int64); ok {
+	if issuedAt, ok := sessionData["IssuedAt"].(float64); ok {
 		payload.IssuedAt = int64(issuedAt)
 	} else {
-		return &Payload{}, fmt.Errorf("issued at missing or invalid")
+		return nil, fmt.Errorf("issued at missing or invalid")
 	}
 
-	// Parse Subject
-	if subject, ok := data["Subject"].(string); ok {
+	if subject, ok := sessionData["Subject"].(string); ok {
 		payload.Subject = subject
 	} else {
-		return &Payload{}, fmt.Errorf("subject missing or invalid")
+		return nil, fmt.Errorf("subject missing or invalid")
 	}
 
-	// Parse UserId
-	if userID, ok := data["UserId"].(float64); ok {
+	if userID, ok := sessionData["UserId"].(float64); ok {
 		payload.UserId = int64(userID)
 	} else {
-		return &Payload{}, fmt.Errorf("user ID missing or invalid")
+		return nil, fmt.Errorf("user ID missing or invalid")
 	}
 
-	// Parse Role
-	if role, ok := data["Role"].(string); ok {
+	if role, ok := sessionData["Role"].(string); ok {
 		switch role {
 		case string(user.ROLE_USER), string(user.ROLE_ADMIN):
 			payload.Role = user.Role(role)
 		default:
-			return &Payload{}, fmt.Errorf("invalid role: %s", role)
+			return nil, fmt.Errorf("invalid role: %s", role)
 		}
 	} else {
-		return &Payload{}, fmt.Errorf("role missing or invalid")
+		return nil, fmt.Errorf("role missing or invalid")
 	}
 
 	return payload, nil
