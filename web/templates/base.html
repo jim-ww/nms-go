@@ -9,7 +9,7 @@
     :root {
       --primary: #222831;
       --primary-hover: #494f5a;
-      --primary-active: #494f5a;
+      --primary-active: #5d6574;
       --primary-active-alt: #525866;
       --secondary: #393e46;
       --secondary-hover: #2e3239;
@@ -30,7 +30,10 @@
   <script src="/web/static/htmx-2.0.3/htmx.min.js"></script>
 </head>
 
-<body>
+
+<!-- TODO load font family Nunito -->
+
+<body class="w-screen h-screen bg-[--primary] text-[--text] m-0 p-0 overflow-hidden flex justify-center">
 
   {{ .Content }}
 

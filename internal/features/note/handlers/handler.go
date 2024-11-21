@@ -45,5 +45,11 @@ func (h *Handler) Dashboard(w http.ResponseWriter, r *http.Request) {
 	// TODO
 	h.logger.Debug("rendering dashboard...")
 	_ = noteTempl.New(notes, selectedNote, user)
-	h.templHandler.RenderTemplate(w, r, h.templ, nil)
+	h.templHandler.RenderTemplate(w, r, h.templ, struct {
+		ButtonClass string
+		IconClass   string
+	}{
+		ButtonClass: "bg-[--primary] hover:bg-[--primary-hover] active:bg-[--primary-active] size-10 rounded-2xl p-2",
+		IconClass:   "text-[--text] h-5 w-5",
+	})
 }
