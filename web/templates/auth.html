@@ -49,7 +49,7 @@
 
     <div class="flex justify-center mb-5">
       <button type="submit" {{ if .IsRegisterForm }} hx-post="/api/register" {{ else }} hx-post="/api/login" {{ end }}
-        hx-target="#main" hx-swap="outerHTML"
+        hx-target="#main" hx-swap="outerHTML" hx-push-url="/"
         class="bg-[--accent] hover:bg-[--accent-hover] rounded-2xl px-7 py-2 text-center w-3/4 transition duration-200">Submit</button>
     </div>
 
