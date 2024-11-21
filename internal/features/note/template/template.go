@@ -1,4 +1,4 @@
-package note
+package template
 
 import (
 	"github.com/jim-ww/nms-go/internal/features/note/dtos"
@@ -28,15 +28,15 @@ type PaginationData struct {
 }
 
 type DashboardData struct {
-	Notes        *[]dtos.NoteSummaryDTO
+	Notes        []*dtos.NoteSummaryDTO
 	SelectedNote *dtos.NoteDetailDTO
-	userDTO.UserProfileDTO
+	*userDTO.UserProfileDTO
 	PanelClosed         bool
 	SearchOptionsClosed bool
 	UserProfileClosed   bool
 }
 
-func New(notes *[]dtos.NoteSummaryDTO, selectedNote *dtos.NoteDetailDTO, userDTO userDTO.UserProfileDTO) *DashboardData {
+func New(notes []*dtos.NoteSummaryDTO, selectedNote *dtos.NoteDetailDTO, userDTO *userDTO.UserProfileDTO) *DashboardData {
 	return &DashboardData{
 		PanelClosed:         false,
 		SearchOptionsClosed: true,

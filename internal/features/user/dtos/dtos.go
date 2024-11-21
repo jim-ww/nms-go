@@ -5,3 +5,11 @@ type UserProfileDTO struct {
 	Email         string
 	NumberOfNotes int
 }
+
+func New(username, email string, numberOfNotes int) *UserProfileDTO {
+	return &UserProfileDTO{
+		Username:      username,
+		Email:         email,
+		NumberOfNotes: numberOfNotes,
+	}
+}

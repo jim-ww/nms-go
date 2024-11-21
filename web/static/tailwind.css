@@ -597,12 +597,20 @@ video {
   height: fit-content;
 }
 
+.h-screen {
+  height: 100vh;
+}
+
 .min-h-screen {
   min-height: 100vh;
 }
 
 .w-3\/4 {
   width: 75%;
+}
+
+.w-64 {
+  width: 16rem;
 }
 
 .max-w-sm {
@@ -623,6 +631,10 @@ video {
 
 .rounded-2xl {
   border-radius: 1rem;
+}
+
+.rounded-lg {
+  border-radius: 0.5rem;
 }
 
 .rounded-md {

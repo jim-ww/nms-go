@@ -12,7 +12,7 @@ import (
 	authService "github.com/jim-ww/nms-go/internal/features/auth/services/auth"
 	"github.com/jim-ww/nms-go/internal/features/auth/services/jwt"
 	"github.com/jim-ww/nms-go/internal/features/auth/services/password/bcrypt"
-	"github.com/jim-ww/nms-go/internal/features/note"
+	noteHandler "github.com/jim-ww/nms-go/internal/features/note/handlers"
 	userRepo "github.com/jim-ww/nms-go/internal/features/user/repository/sqlite"
 	"github.com/jim-ww/nms-go/pkg/config"
 	"github.com/jim-ww/nms-go/pkg/middleware"
@@ -58,7 +58,7 @@ func main() {
 	authHandler := handlers.NewAuthHandler(logger, authService, jwtService, tmplHandler)
 	logger.Debug("Initialized authHandler")
 
-	noteHandler := note.NewHandler(logger)
+	noteHandler := noteHandler.New(logger, tmplHandler)
 	logger.Debug("Initialized noteHandler")
 
 	mux := http.NewServeMux()
