@@ -3,8 +3,6 @@ package sl
 import (
 	"log/slog"
 	"os"
-
-	"github.com/jim-ww/nms-go/internal/features/auth/dtos"
 )
 
 const (
@@ -38,17 +36,4 @@ func Err(err error) slog.Attr {
 		Key:   "error",
 		Value: slog.StringValue(err.Error()),
 	}
-}
-
-func RegisterDTO(dto *dtos.RegisterDTO) slog.Attr {
-	return slog.Group("register_dto",
-		slog.String("username", dto.Username),
-		slog.String("email", dto.Email),
-	)
-}
-
-func LoginDTO(dto *dtos.LoginDTO) slog.Attr {
-	return slog.Group("login_dto",
-		slog.String("username", dto.Username),
-	)
 }

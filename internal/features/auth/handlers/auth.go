@@ -39,7 +39,7 @@ func (ah *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	dto := dtos.NewLoginDTO(r.FormValue("username"), r.FormValue("password"))
-	ah.logger.Debug("got login dto, executing authService.LoginUser()", sl.LoginDTO(dto))
+	ah.logger.Debug("got login dto, executing authService.LoginUser()", dto.SlogAttr())
 
 	token, validationErrors, err := ah.authService.LoginUser(dto)
 	if err != nil {
@@ -71,7 +71,7 @@ func (lh *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 	dto := dtos.NewRegisterDTO(r.FormValue("username"), r.FormValue("email"), r.FormValue("password"))
 
-	lh.logger.Debug("got register dto, executing authService.RegisterUser()", sl.RegisterDTO(dto))
+	lh.logger.Debug("got register dto, executing authService.RegisterUser()", dto.SlogAttr())
 
 	token, validationErrors, err := lh.authService.RegisterUser(dto)
 	if err != nil {

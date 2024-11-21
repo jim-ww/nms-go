@@ -125,7 +125,7 @@ func (srv *AuthService) RegisterUser(dto *dtos.RegisterDTO) (jwtToken string, va
 		return "", nil, err
 	}
 	dto.Password = string(hashedPassword)
-	srv.logger.Debug("User attemt to register:", sl.RegisterDTO(dto))
+	srv.logger.Debug("User attemt to register:", dto.SlogAttr())
 
 	srv.logger.Debug("Creating user with user repository")
 	userID, err := srv.repo.CreateUser(dto.Username, dto.Email, string(hashedPassword), user.ROLE_USER)
