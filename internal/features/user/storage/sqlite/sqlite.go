@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/jim-ww/nms-go/internal/features/user"
-	"github.com/jim-ww/nms-go/internal/features/user/repository"
+	"github.com/jim-ww/nms-go/internal/features/user/storage"
 	"github.com/jim-ww/nms-go/pkg/utils/loggers/sl"
 	"github.com/mattn/go-sqlite3"
 )
@@ -17,7 +17,7 @@ type UserRepository struct {
 	db     *sql.DB
 }
 
-func NewUserRepository(logger *slog.Logger, db *sql.DB) *UserRepository {
+func New(logger *slog.Logger, db *sql.DB) *UserRepository {
 	return &UserRepository{
 		db:     db,
 		logger: logger,
@@ -94,7 +94,7 @@ func (repo UserRepository) IsEmailTaken(email string) (taken bool, err error) {
 	return taken, nil
 }
 
-func (repo UserRepository) CreateUser(username, email, hashedPassword string, role user.Role) (createdID int64, err error) {
+func (repo UserRepository) Create(username, email, hashedPassword string, role user.Role) (createdID int64, err error) {
 	stmt, err := repo.db.Prepare(`INSERT INTO users (username, email, password, role, created_at, updated_at) VALUES (?,?,?,?,?,?)`)
 	if err != nil {
 		repo.logger.Error("Failed to prepare stmt CreateUser()", sl.Err(err))
@@ -107,7 +107,7 @@ func (repo UserRepository) CreateUser(username, email, hashedPassword string, ro
 
 		if sqliteErr, ok := err.(sqlite3.Error); ok && sqliteErr.Code == sqlite3.ErrConstraint {
 			repo.logger.Debug("Failed to execute stmt CreateUser(), user already exists", sl.Err(err))
-			return 0, repository.ErrUserAlreadyExists
+			return 0, storage.ErrUserAlreadyExists
 		}
 
 		repo.logger.Error("Failed to execute stmt CreateUser()", sl.Err(err))
@@ -123,7 +123,7 @@ func (repo UserRepository) CreateUser(username, email, hashedPassword string, ro
 	return userID, nil
 }
 
-func (repo UserRepository) GetUserByUsername(username string) (user user.User, err error) {
+func (repo UserRepository) GetByUsername(username string) (user user.User, err error) {
 	repo.logger.Debug("executing GetUserByUsername() sqlite query...")
 	stmt, err := repo.db.Prepare(`SELECT id, username, email, password, role, created_at, updated_at FROM users WHERE username = ?`)
 	if err != nil {
@@ -136,7 +136,7 @@ func (repo UserRepository) GetUserByUsername(username string) (user user.User, e
 		// TODO test
 		if errors.Is(err, sql.ErrNoRows) {
 			repo.logger.Debug("username does not exist", sl.Err(err))
-			return user, repository.ErrUsernameDoesNotExist
+			return user, storage.ErrUsernameDoesNotExist
 		}
 
 		repo.logger.Error("failed to execute stmt GetUserByUsername()", sl.Err(err))

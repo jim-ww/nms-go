@@ -1,4 +1,4 @@
-package dtos
+package login
 
 import "log/slog"
 
@@ -7,7 +7,7 @@ type LoginDTO struct {
 	Password string `json:"password"`
 }
 
-func NewLoginDTO(username, password string) *LoginDTO {
+func New(username, password string) *LoginDTO {
 	return &LoginDTO{
 		Username: username,
 		Password: password,

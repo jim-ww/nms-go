@@ -4,7 +4,8 @@ import (
 	"regexp"
 	"unicode/utf8"
 
-	"github.com/jim-ww/nms-go/internal/features/auth/dtos"
+	loginDTO "github.com/jim-ww/nms-go/internal/features/auth/dtos/login"
+	registerDTO "github.com/jim-ww/nms-go/internal/features/auth/dtos/register"
 )
 
 type FieldError string
@@ -43,14 +44,14 @@ func (errors ValidationErrors) TranslateValidationErrors() map[string][]string {
 	return translated
 }
 
-func ValidateLoginDTO(dto *dtos.LoginDTO) ValidationErrors {
+func ValidateLoginDTO(dto *loginDTO.LoginDTO) ValidationErrors {
 	errs := make(ValidationErrors, 2)
 	errs[UsernameField] = validateUsername(dto.Username)
 	errs[PasswordField] = validatePassword(dto.Password)
 	return errs
 }
 
-func ValidateRegisterDTO(dto *dtos.RegisterDTO) ValidationErrors {
+func ValidateRegisterDTO(dto *registerDTO.RegisterDTO) ValidationErrors {
 	errs := make(ValidationErrors, 3)
 	errs[UsernameField] = validateUsername(dto.Username)
 	errs[EmailField] = validateEmail(dto.Email)

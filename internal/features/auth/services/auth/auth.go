@@ -5,11 +5,12 @@ import (
 	"log/slog"
 
 	"github.com/jim-ww/nms-go/internal/features/auth"
-	"github.com/jim-ww/nms-go/internal/features/auth/dtos"
+	loginDTO "github.com/jim-ww/nms-go/internal/features/auth/dtos/login"
+	registerDTO "github.com/jim-ww/nms-go/internal/features/auth/dtos/register"
 	"github.com/jim-ww/nms-go/internal/features/auth/services/jwt"
 	"github.com/jim-ww/nms-go/internal/features/auth/services/password"
 	"github.com/jim-ww/nms-go/internal/features/user"
-	"github.com/jim-ww/nms-go/internal/features/user/repository"
+	"github.com/jim-ww/nms-go/internal/features/user/storage"
 	"github.com/jim-ww/nms-go/pkg/utils/loggers/sl"
 )
 
@@ -26,8 +27,8 @@ const (
 type AuthRepository interface {
 	IsUsernameTaken(username string) (taken bool, err error)
 	IsEmailTaken(email string) (taken bool, err error)
-	CreateUser(username, email, hashedPassword string, role user.Role) (createdID int64, err error)
-	GetUserByUsername(username string) (user user.User, err error)
+	Create(username, email, hashedPassword string, role user.Role) (createdID int64, err error)
+	GetByUsername(username string) (user user.User, err error)
 }
 
 type AuthService struct {
@@ -46,7 +47,7 @@ func New(logger *slog.Logger, jwtService *jwt.JWTService, passwordHasher passwor
 	}
 }
 
-func (srv *AuthService) LoginUser(dto *dtos.LoginDTO) (jwtToken string, validationErrors auth.ValidationErrors, err error) {
+func (srv *AuthService) LoginUser(dto *loginDTO.LoginDTO) (jwtToken string, validationErrors auth.ValidationErrors, err error) {
 
 	if validationErrors = auth.ValidateLoginDTO(dto); validationErrors.HasErrors() {
 		srv.logger.Debug("field validation completed with errors:", slog.Any("validationErrors", validationErrors))
@@ -56,10 +57,10 @@ func (srv *AuthService) LoginUser(dto *dtos.LoginDTO) (jwtToken string, validati
 	srv.logger.Debug("Field validation completed")
 	srv.logger.Debug("Getting user by username")
 
-	user, err := srv.repo.GetUserByUsername(dto.Username)
+	user, err := srv.repo.GetByUsername(dto.Username)
 	if err != nil {
 
-		if errors.Is(err, repository.ErrUsernameDoesNotExist) {
+		if errors.Is(err, storage.ErrUsernameDoesNotExist) {
 			srv.logger.Debug("Failed to get user by username", sl.Err(err))
 			validationErrors[auth.UsernameField] = append(validationErrors[auth.UsernameField], ErrUsernameDoesNotExist)
 			return "", validationErrors, nil
@@ -85,7 +86,7 @@ func (srv *AuthService) LoginUser(dto *dtos.LoginDTO) (jwtToken string, validati
 	return jwtToken, nil, nil
 }
 
-func (srv *AuthService) RegisterUser(dto *dtos.RegisterDTO) (jwtToken string, validationErrors auth.ValidationErrors, err error) {
+func (srv *AuthService) RegisterUser(dto *registerDTO.RegisterDTO) (jwtToken string, validationErrors auth.ValidationErrors, err error) {
 
 	if validationErrors = auth.ValidateRegisterDTO(dto); validationErrors.HasErrors() {
 		srv.logger.Debug("field validation completed with errors:", slog.Any("validationErrors", validationErrors))
@@ -128,7 +129,7 @@ func (srv *AuthService) RegisterUser(dto *dtos.RegisterDTO) (jwtToken string, va
 	srv.logger.Debug("User attemt to register:", dto.SlogAttr())
 
 	srv.logger.Debug("Creating user with user repository")
-	userID, err := srv.repo.CreateUser(dto.Username, dto.Email, string(hashedPassword), user.ROLE_USER)
+	userID, err := srv.repo.Create(dto.Username, dto.Email, string(hashedPassword), user.ROLE_USER)
 	if err != nil {
 		srv.logger.Error("Failed to create new user", sl.Err(err))
 		return "", nil, err

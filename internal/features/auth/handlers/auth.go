@@ -6,7 +6,8 @@ import (
 	"net/http"
 
 	"github.com/jim-ww/nms-go/internal/features/auth"
-	"github.com/jim-ww/nms-go/internal/features/auth/dtos"
+	loginDTO "github.com/jim-ww/nms-go/internal/features/auth/dtos/login"
+	registerDTO "github.com/jim-ww/nms-go/internal/features/auth/dtos/register"
 	authService "github.com/jim-ww/nms-go/internal/features/auth/services/auth"
 	jwtService "github.com/jim-ww/nms-go/internal/features/auth/services/jwt"
 	"github.com/jim-ww/nms-go/pkg/utils/handlers"
@@ -21,7 +22,7 @@ type AuthHandler struct {
 	tmplHandler *handlers.TmplHandler
 }
 
-func NewAuthHandler(log *slog.Logger, userService *authService.AuthService, jwtService *jwtService.JWTService, tmplHandler *handlers.TmplHandler) *AuthHandler {
+func New(log *slog.Logger, userService *authService.AuthService, jwtService *jwtService.JWTService, tmplHandler *handlers.TmplHandler) *AuthHandler {
 	templ := template.Must(template.ParseFiles("web/templates/auth.html"))
 	return &AuthHandler{
 		logger:      log,
@@ -38,7 +39,7 @@ func (ah *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		handlers.RenderError(w, r, "unable to parse form", http.StatusBadRequest)
 		return
 	}
-	dto := dtos.NewLoginDTO(r.FormValue("username"), r.FormValue("password"))
+	dto := loginDTO.New(r.FormValue("username"), r.FormValue("password"))
 	ah.logger.Debug("got login dto, executing authService.LoginUser()", dto.SlogAttr())
 
 	token, validationErrors, err := ah.authService.LoginUser(dto)
@@ -69,7 +70,7 @@ func (lh *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		handlers.RenderError(w, r, "Unable to parse form", http.StatusBadRequest)
 		return
 	}
-	dto := dtos.NewRegisterDTO(r.FormValue("username"), r.FormValue("email"), r.FormValue("password"))
+	dto := registerDTO.New(r.FormValue("username"), r.FormValue("email"), r.FormValue("password"))
 
 	lh.logger.Debug("got register dto, executing authService.RegisterUser()", dto.SlogAttr())
 

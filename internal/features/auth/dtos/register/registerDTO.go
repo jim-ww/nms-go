@@ -1,4 +1,4 @@
-package dtos
+package register
 
 import "log/slog"
 
@@ -8,7 +8,7 @@ type RegisterDTO struct {
 	Password string `json:"password"`
 }
 
-func NewRegisterDTO(username, email, password string) *RegisterDTO {
+func New(username, email, password string) *RegisterDTO {
 	return &RegisterDTO{
 		Username: username,
 		Email:    email,

@@ -1,4 +1,4 @@
-package repository
+package storage
 
 import (
 	"errors"
@@ -14,9 +14,9 @@ var (
 type UserRepository interface {
 	IsUsernameTaken(username string) (taken bool, err error)
 	IsEmailTaken(email string) (taken bool, err error)
-	CreateUser(username, email, hashedPassword string, role user.Role) (createdID int64, err error)
-	GetUserByUsername(username string) (user user.User, err error)
+	Create(username, email, hashedPassword string, role user.Role) (createdID int64, err error)
+	GetByUsername(username string) (user user.User, err error)
 	Migrate() error
-	// GetUserByID(id int64) (user user.User, err error)
-	// GetUserByEmail(email string) (user user.User, err error)
+	// GetByID(id int64) (user user.User, err error)
+	// GetByEmail(email string) (user user.User, err error)
 }

@@ -13,7 +13,7 @@ import (
 	"github.com/jim-ww/nms-go/internal/features/auth/services/jwt"
 	"github.com/jim-ww/nms-go/internal/features/auth/services/password/bcrypt"
 	noteHandler "github.com/jim-ww/nms-go/internal/features/note/handlers"
-	userRepo "github.com/jim-ww/nms-go/internal/features/user/repository/sqlite"
+	userRepo "github.com/jim-ww/nms-go/internal/features/user/storage/sqlite"
 	"github.com/jim-ww/nms-go/pkg/config"
 	"github.com/jim-ww/nms-go/pkg/middleware"
 	tmpl "github.com/jim-ww/nms-go/pkg/utils/handlers"
@@ -36,7 +36,7 @@ func main() {
 	}
 	logger.Info("Initialized sqlite db", slog.Any("storage-path", cfg.StoragePath))
 
-	userRepo := userRepo.NewUserRepository(logger, db)
+	userRepo := userRepo.New(logger, db)
 	logger.Debug("Initialized userRepository")
 
 	userRepo.Migrate()
@@ -55,7 +55,7 @@ func main() {
 	loginFormHandler := handlers.NewAuthFormHandler(logger, tmplHandler)
 	logger.Debug("Initialized loginFormHandler")
 
-	authHandler := handlers.NewAuthHandler(logger, authService, jwtService, tmplHandler)
+	authHandler := handlers.New(logger, authService, jwtService, tmplHandler)
 	logger.Debug("Initialized authHandler")
 
 	noteHandler := noteHandler.New(logger, tmplHandler)

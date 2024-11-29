@@ -11,14 +11,16 @@ mkShell {
   ];
 
   shellHook = ''
-    alias build-css='tailwindcss build -o web/static/tailwind.css'
-    alias run='build-css && air'
+    alias tailwind-watch='tailwindcss build -o web/static/tailwind.css --watch'
+    alias tailwind-build='tailwindcss build -o web/static/tailwind.css --minify'
+    alias dev='air'
     alias test='go test ./...'
     alias test-verbose='go test -v -cover ./...'
     alias help='echo "$HELP"'
     export HELP='
-      $ run - rebuilds c and starts server with air
-      $ build-css - rebuild css with tailwind
+      $ dev - starts server with air
+      $ tailwind-build - rebuild css with tailwind
+      $ tailwind-watch - rebuild css with tailwind and watch for changes
       $ test - run all tests
       $ test-verbose - run tests verbose + with coverage
       $ help - print this message'
