@@ -10,6 +10,7 @@ mkShell {
     sqlite
     sqlc
     air
+    go-migrate
   ];
 
   shellHook = ''

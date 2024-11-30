@@ -2,17 +2,33 @@
 SELECT * FROM users;
 
 -- name: FindUserByID :one
--- SELECT * FROM users
--- WHERE id = $1;
+SELECT * FROM users
+WHERE id = ?;
+
+-- name: FindUserByUsername :one
+SELECT * FROM users
+WHERE username = ?;
+
+-- name: FindUserByEmail :one
+SELECT * FROM users
+WHERE email = ?;
 
 -- name: InsertUser :one
--- INSERT INTO users (id, username, email)
--- VALUES (uuid_generate_v4(), $1, $2)
--- RETURNING *;
+ INSERT INTO users (id, username, email, password, role)
+ VALUES (uuid_generate_v4(), ?, ?, ?, ?)
+ RETURNING *;
 
 -- name: IsUsernameTaken :one
--- SELECT EXISTS (SELECT ONE(*) FROM users WHERE username = $1);
+SELECT EXISTS (
+  SELECT 1 FROM users
+  WHERE username = ?
+);
 
 -- name: IsEmailTaken :one
--- SELECT EXISTS (SELECT ONE(*) FROM users WHERE email = $1);
+SELECT EXISTS (
+  SELECT 1 FROM users
+  WHERE email = ?
+);
+
+
 

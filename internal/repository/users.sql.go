@@ -43,3 +43,124 @@ func (q *Queries) FindAllUsers(ctx context.Context) ([]User, error) {
 	}
 	return items, nil
 }
+
+const findUserByEmail = `-- name: FindUserByEmail :one
+SELECT id, username, email, password, role, created_at, updated_at FROM users
+WHERE email = ?
+`
+
+func (q *Queries) FindUserByEmail(ctx context.Context, email interface{}) (User, error) {
+	row := q.db.QueryRowContext(ctx, findUserByEmail, email)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.Password,
+		&i.Role,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const findUserByID = `-- name: FindUserByID :one
+SELECT id, username, email, password, role, created_at, updated_at FROM users
+WHERE id = ?
+`
+
+func (q *Queries) FindUserByID(ctx context.Context, id string) (User, error) {
+	row := q.db.QueryRowContext(ctx, findUserByID, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.Password,
+		&i.Role,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const findUserByUsername = `-- name: FindUserByUsername :one
+SELECT id, username, email, password, role, created_at, updated_at FROM users
+WHERE username = ?
+`
+
+func (q *Queries) FindUserByUsername(ctx context.Context, username interface{}) (User, error) {
+	row := q.db.QueryRowContext(ctx, findUserByUsername, username)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.Password,
+		&i.Role,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const insertUser = `-- name: InsertUser :one
+ INSERT INTO users (id, username, email, password, role)
+ VALUES (uuid_generate_v4(), ?, ?, ?, ?)
+ RETURNING id, username, email, password, role, created_at, updated_at
+`
+
+type InsertUserParams struct {
+	Username interface{}
+	Email    interface{}
+	Password interface{}
+	Role     interface{}
+}
+
+func (q *Queries) InsertUser(ctx context.Context, arg InsertUserParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, insertUser,
+		arg.Username,
+		arg.Email,
+		arg.Password,
+		arg.Role,
+	)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.Password,
+		&i.Role,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const isEmailTaken = `-- name: IsEmailTaken :one
+SELECT EXISTS (
+  SELECT 1 FROM users
+  WHERE email = ?
+)
+`
+
+func (q *Queries) IsEmailTaken(ctx context.Context, email interface{}) (int64, error) {
+	row := q.db.QueryRowContext(ctx, isEmailTaken, email)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
+const isUsernameTaken = `-- name: IsUsernameTaken :one
+SELECT EXISTS (
+  SELECT 1 FROM users
+  WHERE username = ?
+)
+`
+
+func (q *Queries) IsUsernameTaken(ctx context.Context, username interface{}) (int64, error) {
+	row := q.db.QueryRowContext(ctx, isUsernameTaken, username)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}

@@ -8,26 +8,48 @@ import (
 )
 
 type Field string
-type FieldError string
 
 const (
-	UsernameField Field = "username"
-	EmailField    Field = "email"
-	PasswordField Field = "password"
+	usernameField Field = "username"
+	emailField    Field = "email"
+	passwordField Field = "password"
 )
 
 const (
-	ErrUsernameTaken        FieldError = "username already exists"
-	ErrEmailTaken           FieldError = "email already exists"
-	ErrUsernameDoesNotExist FieldError = "username does not exist"
-	ErrInvalidPassword      FieldError = "invalid password"
+	UsernameTaken        = "username already exists"
+	EmailTaken           = "email already exists"
+	UsernameDoesNotExist = "username does not exist"
+	InvalidPassword      = "invalid password"
 )
 
-type ValidationErrors *map[Field][]FieldError
+type ValidationErrors map[Field][]string
+
+func (v ValidationErrors) Len() int {
+	return len(v)
+}
+
+func (v ValidationErrors) HasErrors() bool {
+	return len(v[usernameField]) > 0 || len(v[emailField]) > 0 || len(v[passwordField]) > 0
+}
+
+func (v ValidationErrors) TranslateToMap() map[string][]string {
+	converted := make(map[string][]string, v.Len())
+	for field, messages := range v {
+		converted[string(field)] = messages
+	}
+	return converted
+}
 
 type AuthValidator struct {
 	logger   *slog.Logger
 	validatr *validator.Validate
+}
+
+func New(logger *slog.Logger, validatr *validator.Validate) *AuthValidator {
+	return &AuthValidator{
+		logger:   logger,
+		validatr: validatr,
+	}
 }
 
 func (v *AuthValidator) ValidateLoginDTO(dto dtos.LoginDTO) (errors ValidationErrors) {

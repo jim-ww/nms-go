@@ -8,8 +8,3 @@ sql:
         package: 'repository'
         out: 'internal/repository'
         # sql_package: 'mattn/go-sqlite3'
-        overrides:
-          - db_type: 'uuid'
-            go_type:
-              import: 'github.com/google/uuid'
-              type: 'UUID'
