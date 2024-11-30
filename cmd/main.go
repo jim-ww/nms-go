@@ -6,18 +6,19 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-playground/validator"
 	"github.com/go-playground/validator/v10"
 	"github.com/jim-ww/nms-go/internal/config"
 	authValidator "github.com/jim-ww/nms-go/internal/features/auth"
 	getAuthform "github.com/jim-ww/nms-go/internal/features/auth/handlers/getAuthForm"
 	postauth "github.com/jim-ww/nms-go/internal/features/auth/handlers/postAuth"
+	authMiddleware "github.com/jim-ww/nms-go/internal/features/auth/middleware"
 	authService "github.com/jim-ww/nms-go/internal/features/auth/services/auth"
 	"github.com/jim-ww/nms-go/internal/features/auth/services/jwt"
 	"github.com/jim-ww/nms-go/internal/features/auth/services/password/bcrypt"
 	userRepo "github.com/jim-ww/nms-go/internal/repository"
 	sl "github.com/jim-ww/nms-go/internal/utils/loggers/sl"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -34,7 +35,7 @@ func main() {
 		logger.Info("Failed to initialize sqlite3 db")
 		panic(err)
 	}
-	logger.Info("Initialized sqlite db", slog.Any("storage-path", cfg.StoragePath))
+	logger.Info("Initialized storage", slog.Any("storage-path", cfg.StoragePath))
 
 	userRepo := userRepo.New(conn)
 
@@ -53,7 +54,12 @@ func main() {
 	authForm := getAuthform.New(logger)
 	authHandler := postauth.New(logger, authService, jwtService)
 
+	authMiddleware := authMiddleware.New(logger, jwtService)
+
 	e := echo.New()
+
+	e.Use(echo.WrapMiddleware(authMiddleware.Handler))
+	e.Use(middleware.Logger())
 
 	e.Static("/static", "./static")
 	e.File("/favicon.ico", "static/favicon.ico")
@@ -62,9 +68,6 @@ func main() {
 	e.GET("/register", authForm.Register)
 	e.GET("/api/login", authHandler.Login)
 	e.GET("/api/register", authHandler.Register)
-
-	// 	loggedMux := middleware.Logger(mainHandler)
-	// 	protectedMux := authMiddleware.Handler(loggedMux)
 
 	logger.Info("Starting server...")
 	if err = http.ListenAndServe(cfg.HTTPServer.Address, e); err != nil {

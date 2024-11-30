@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 
@@ -16,48 +17,37 @@ import (
 
 // TODO use context
 // TODO make all SQL related stuff in (if possible readonly) transactions
-// type AuthRepository interface {
-// 	IsUsernameTaken(username string) (taken bool, err error)
-// 	IsEmailTaken(email string) (taken bool, err error)
-// 	Create(username, email, hashedPassword string, role user.Role) (createdID uuid.UUID, err error)
-// 	GetByUsername(username string) (user user.User, err error)
-// }
-
 type AuthService struct {
-	logger         *slog.Logger
-	jwt            *jwt.JWTService
-	pwdHasher      password.PasswordHasher
-	userRepository *repository.Queries
-	validatr       *auth.AuthValidator
+	logger    *slog.Logger
+	jwt       *jwt.JWTService
+	pwdHasher password.PasswordHasher
+	userRepo  *repository.Queries
+	validatr  *auth.AuthValidator
 }
 
 func New(logger *slog.Logger, jwtService *jwt.JWTService, passwordHasher password.PasswordHasher, userRepo *repository.Queries, validatr *auth.AuthValidator) *AuthService {
 	return &AuthService{
-		logger:         logger,
-		jwt:            jwtService,
-		pwdHasher:      passwordHasher,
-		userRepository: userRepo,
-		validatr:       validatr,
+		logger:    logger,
+		jwt:       jwtService,
+		pwdHasher: passwordHasher,
+		userRepo:  userRepo,
+		validatr:  validatr,
 	}
 }
 
-func (srv *AuthService) LoginUser(dto *dtos.LoginDTO) (jwtToken string, validationErrors auth.ValidationErrors, err error) {
+func (srv *AuthService) LoginUser(ctx context.Context, dto *dtos.LoginDTO) (jwtToken string, validationErrors auth.ValidationErrors, err error) {
 
 	// validate dto
-	if validationErrors = auth.ValidateLoginDTO(dto); validationErrors.HasErrors() {
-		srv.logger.Debug("field validation completed with errors:", slog.Any("validationErrors", validationErrors))
+	if validationErrors = srv.validatr.ValidateLoginDTO(dto); validationErrors.HasErrors() {
 		return "", validationErrors, nil
 	}
 
-	srv.logger.Debug("Field validation completed")
-	srv.logger.Debug("Getting user by username")
-
-	user, err := srv.userRepository.GetByUsername(dto.Username)
+	user, err := srv.userRepo.FindUserByUsername(ctx, dto.Username)
 	if err != nil {
 
 		if errors.Is(err, storage.ErrUsernameDoesNotExist) {
 			srv.logger.Debug("Failed to get user by username", sl.Err(err))
-			validationErrors[auth.UsernameField] = append(validationErrors[auth.UsernameField], ErrUsernameDoesNotExist)
+			validationErrors[auth.UsernameField] = append(validationErrors[auth.UsernameField], auth.UsernameDoesNotExist)
 			return "", validationErrors, nil
 		}
 
@@ -67,7 +57,7 @@ func (srv *AuthService) LoginUser(dto *dtos.LoginDTO) (jwtToken string, validati
 
 	if err := srv.pwdHasher.ComparePasswords(user.Password, dto.Password); err != nil {
 		srv.logger.Debug("Password hash comparison failure", sl.Err(err))
-		validationErrors[auth.PasswordField] = append(validationErrors[auth.PasswordField], ErrInvalidPassword)
+		validationErrors[auth.PasswordField] = append(validationErrors[auth.PasswordField], auth.InvalidPassword)
 		return "", validationErrors, nil
 	}
 
@@ -81,24 +71,24 @@ func (srv *AuthService) LoginUser(dto *dtos.LoginDTO) (jwtToken string, validati
 	return jwtToken, nil, nil
 }
 
-func (srv *AuthService) RegisterUser(dto *dtos.RegisterDTO) (jwtToken string, validationErrors auth.ValidationErrors, err error) {
+func (srv *AuthService) RegisterUser(ctx context.Context, dto *dtos.RegisterDTO) (jwtToken string, validationErrors auth.ValidationErrors, err error) {
 
-	if validationErrors = auth.ValidateRegisterDTO(dto); validationErrors.HasErrors() {
+	if validationErrors = srv.validatr.ValidateRegisterDTO(dto); validationErrors.HasErrors() {
 		srv.logger.Debug("field validation completed with errors:", slog.Any("validationErrors", validationErrors))
 		return "", validationErrors, nil
 	}
 
 	srv.logger.Debug("field validation completed, checking for existing username/email")
 
-	taken, err := srv.userRepository.IsUsernameTaken(dto.Username)
+	taken, err := srv.userRepo.IsUsernameTaken(ctx, dto.Username)
 	if err != nil {
 		return "", nil, err
 	} else if taken {
-		validationErrors[auth.UsernameField] = append(validationErrors[auth.UsernameField], ErrUsernameTaken)
+		validationErrors[auth.UsernameField] = append(validationErrors[auth.UsernameField], auth.UsernameTaken)
 	}
 	srv.logger.Debug("username validated")
 
-	taken, err = srv.userRepository.IsEmailTaken(dto.Email)
+	taken, err = srv.userRepo.IsEmailTaken(dto.Email)
 	if err != nil {
 		return "", nil, err
 	} else if taken {
@@ -124,7 +114,7 @@ func (srv *AuthService) RegisterUser(dto *dtos.RegisterDTO) (jwtToken string, va
 	srv.logger.Debug("User attemt to register:", dto.SlogAttr())
 
 	srv.logger.Debug("Creating user with user repository")
-	userID, err := srv.userRepository.Create(dto.Username, dto.Email, string(hashedPassword), user.ROLE_USER)
+	userID, err := srv.userRepo.Create(dto.Username, dto.Email, string(hashedPassword), user.ROLE_USER)
 	if err != nil {
 		srv.logger.Error("Failed to create new user", sl.Err(err))
 		return "", nil, err

@@ -2,8 +2,21 @@ package template
 
 import (
 	"github.com/jim-ww/nms-go/internal/features/note/dtos"
-	userDTO "github.com/jim-ww/nms-go/internal/features/user/dtos"
 )
+
+type UserProfileDTO struct {
+	Username      string
+	Email         string
+	NumberOfNotes int
+}
+
+func NewUserProfileDTO(username, email string, numberOfNotes int) *UserProfileDTO {
+	return &UserProfileDTO{
+		Username:      username,
+		Email:         email,
+		NumberOfNotes: numberOfNotes,
+	}
+}
 
 type SearchIn string
 type Order string
@@ -30,13 +43,13 @@ type PaginationData struct {
 type DashboardData struct {
 	Notes        []*dtos.NoteSummaryDTO
 	SelectedNote *dtos.NoteDetailDTO
-	*userDTO.UserProfileDTO
+	*UserProfileDTO
 	PanelClosed         bool
 	SearchOptionsClosed bool
 	UserProfileClosed   bool
 }
 
-func New(notes []*dtos.NoteSummaryDTO, selectedNote *dtos.NoteDetailDTO, userDTO *userDTO.UserProfileDTO) *DashboardData {
+func New(notes []*dtos.NoteSummaryDTO, selectedNote *dtos.NoteDetailDTO, userDTO *UserProfileDTO) *DashboardData {
 	return &DashboardData{
 		PanelClosed:         false,
 		SearchOptionsClosed: true,

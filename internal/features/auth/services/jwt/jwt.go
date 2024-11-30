@@ -9,8 +9,8 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/jim-ww/nms-go/internal/config"
-	"github.com/jim-ww/nms-go/internal/features/user"
-	"github.com/jim-ww/nms-go/pkg/utils/loggers/sl"
+	"github.com/jim-ww/nms-go/internal/features/auth/role"
+	"github.com/jim-ww/nms-go/internal/utils/loggers/sl"
 )
 
 var (
@@ -20,7 +20,7 @@ var (
 
 type AuthClaims struct {
 	UserID uuid.UUID
-	Role   user.Role
+	Role   role.Role
 	jwt.RegisteredClaims
 }
 
@@ -36,7 +36,7 @@ func New(logger *slog.Logger, cfg *config.JWTTokenConfig) *JWTService {
 	}
 }
 
-func (srv JWTService) GenerateToken(userID uuid.UUID, role user.Role) (encodedToken string, err error) {
+func (srv JWTService) GenerateToken(userID uuid.UUID, role role.Role) (encodedToken string, err error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodES256, AuthClaims{UserID: userID, Role: role, RegisteredClaims: jwt.RegisteredClaims{
 		Issuer:    "nms",
 		Subject:   "user-auth",

@@ -5,15 +5,26 @@
 package repository
 
 import (
+	"database/sql"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/jim-ww/nms-go/internal/features/auth/role"
 )
 
+type Note struct {
+	ID      uuid.UUID
+	Title   string
+	Content sql.NullString
+	UserID  uuid.UUID
+}
+
 type User struct {
-	ID        string
-	Username  interface{}
-	Email     interface{}
-	Password  interface{}
-	Role      interface{}
+	ID        uuid.UUID
+	Username  string
+	Email     string
+	Password  string
+	Role      role.Role
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }

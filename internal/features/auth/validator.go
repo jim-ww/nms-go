@@ -10,9 +10,9 @@ import (
 type Field string
 
 const (
-	usernameField Field = "username"
-	emailField    Field = "email"
-	passwordField Field = "password"
+	UsernameField Field = "username"
+	EmailField    Field = "email"
+	PasswordField Field = "password"
 )
 
 const (
@@ -29,7 +29,7 @@ func (v ValidationErrors) Len() int {
 }
 
 func (v ValidationErrors) HasErrors() bool {
-	return len(v[usernameField]) > 0 || len(v[emailField]) > 0 || len(v[passwordField]) > 0
+	return len(v[UsernameField]) > 0 || len(v[EmailField]) > 0 || len(v[PasswordField]) > 0
 }
 
 func (v ValidationErrors) TranslateToMap() map[string][]string {
@@ -52,7 +52,14 @@ func New(logger *slog.Logger, validatr *validator.Validate) *AuthValidator {
 	}
 }
 
-func (v *AuthValidator) ValidateLoginDTO(dto dtos.LoginDTO) (errors ValidationErrors) {
+func (v *AuthValidator) ValidateLoginDTO(dto *dtos.LoginDTO) (errors ValidationErrors) {
+	if err := v.validatr.Struct(dto); err != nil {
+		v.logger.Debug("field validation completed with errors")
+	}
+	return nil
+}
+
+func (v *AuthValidator) ValidateRegisterDTO(dto *dtos.RegisterDTO) (errors ValidationErrors) {
 	if err := v.validatr.Struct(dto); err != nil {
 		v.logger.Debug("field validation completed with errors")
 	}

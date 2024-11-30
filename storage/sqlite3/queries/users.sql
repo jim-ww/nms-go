@@ -18,6 +18,7 @@ WHERE email = ?;
  VALUES (uuid_generate_v4(), ?, ?, ?, ?)
  RETURNING *;
 
+-- TODO returns int64
 -- name: IsUsernameTaken :one
 SELECT EXISTS (
   SELECT 1 FROM users

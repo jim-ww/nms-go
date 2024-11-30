@@ -38,7 +38,7 @@ func (ah *AuthHandler) Login(c echo.Context) error {
 	dto := dtos.NewLoginDTO(req.FormValue("username"), req.FormValue("password"))
 
 	// attempt to login
-	token, validationErrors, err := ah.authService.LoginUser(dto)
+	token, validationErrors, err := ah.authService.LoginUser(c.Request().Context(), dto)
 	ah.logger.Error("unable to login user", sl.Err(err))
 	if err != nil {
 		return err
@@ -66,7 +66,7 @@ func (lh *AuthHandler) Register(c echo.Context) error {
 	dto := dtos.NewRegisterDTO(req.FormValue("username"), req.FormValue("email"), req.FormValue("password"))
 
 	// attempt to login
-	token, validationErrors, err := lh.authService.RegisterUser(dto)
+	token, validationErrors, err := lh.authService.RegisterUser(c.Request().Context(), dto)
 	lh.logger.Error("unable to register user", sl.Err(err))
 	if err != nil {
 		return err
