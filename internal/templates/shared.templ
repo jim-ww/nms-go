@@ -24,3 +24,13 @@ templ ButtonHtmx(btnType, apiAction, hxTarget, hxSwap, hxPushURL, content string
 					class="bg-[--accent] hover:bg-[--accent-hover] rounded-2xl px-7 py-2 text-center w-3/4 transition duration-200"
 				>{ content }</button>
 }
+
+templ LinkText(hxGet, hxPushURL, hxTarget, hxSwap, text string) {
+  <a
+					hx-get={ hxGet }
+					hx-push-url={ hxPushURL }
+					hx-target={ hxTarget }
+					hx-swap={ hxSwap }
+					class="text-center underline transition duration-300 hover:text-[--accent] hover:cursor-pointer"
+				>{ text }</a>
+}

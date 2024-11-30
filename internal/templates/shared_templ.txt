@@ -12,3 +12,9 @@
 \" hx-push-url=\"
 \" class=\"bg-[--accent] hover:bg-[--accent-hover] rounded-2xl px-7 py-2 text-center w-3/4 transition duration-200\">
 </button>
+<a hx-get=\"
+\" hx-push-url=\"
+\" hx-target=\"
+\" hx-swap=\"
+\" class=\"text-center underline transition duration-300 hover:text-[--accent] hover:cursor-pointer\">
+</a>
