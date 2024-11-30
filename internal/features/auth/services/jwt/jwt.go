@@ -6,9 +6,10 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
+	"github.com/jim-ww/nms-go/internal/config"
 	"github.com/jim-ww/nms-go/internal/features/user"
-	"github.com/jim-ww/nms-go/pkg/config"
-	"github.com/jim-ww/nms-go/pkg/utils/jwts"
 	"github.com/jim-ww/nms-go/pkg/utils/loggers/sl"
 )
 
@@ -16,6 +17,12 @@ var (
 	JWTTokenCookieName = "jwt-token"
 	ErrInvalidJWT      = errors.New("failed to validate JWT")
 )
+
+type AuthClaims struct {
+	UserID uuid.UUID
+	Role   user.Role
+	jwt.RegisteredClaims
+}
 
 type JWTService struct {
 	logger *slog.Logger
@@ -29,17 +36,13 @@ func New(logger *slog.Logger, cfg *config.JWTTokenConfig) *JWTService {
 	}
 }
 
-func (srv JWTService) GenerateToken(userID int64, role user.Role) (encodedToken string, err error) {
-	token := Payload{
-		ExpirationTime: time.Now().Add(srv.cfg.ExpirationDuration),
-		IssuedAt:       time.Now().Unix(),
-		Subject:        "user-auth",
-		UserId:         userID,
-		Role:           role,
-	}
-	claims := map[string]any{"token": token}
-
-	return jwts.GenerateJWT(srv.cfg.Secret, claims)
+func (srv JWTService) GenerateToken(userID uuid.UUID, role user.Role) (encodedToken string, err error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodES256, AuthClaims{UserID: userID, Role: role, RegisteredClaims: jwt.RegisteredClaims{
+		Issuer:    "nms",
+		Subject:   "user-auth",
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(srv.cfg.ExpirationDuration)),
+	}})
+	return token.SignedString(srv.cfg.Secret)
 }
 
 func (srv JWTService) NewTokenCookie(jwtToken string) *http.Cookie {
@@ -53,21 +56,15 @@ func (srv JWTService) NewTokenCookie(jwtToken string) *http.Cookie {
 	}
 }
 
-func (srv JWTService) ValidateAndExtractPayload(encodedToken string) (*Payload, error) {
-	srv.logger.Debug("Extraction payload from jwt...")
-	payloadData, err := jwts.ValidateAndExtractPayload(srv.cfg.Secret, encodedToken)
+func (srv JWTService) ValidateAndExtractPayload(encodedToken string) (*AuthClaims, error) {
+	token, err := jwt.ParseWithClaims(encodedToken, &AuthClaims{}, func(t *jwt.Token) (interface{}, error) {
+		return srv.cfg.Secret, nil
+	})
 	if err != nil {
-		srv.logger.Error("Failed to extract payload data from jwt", sl.Err(err))
-		return nil, ErrInvalidJWT
+		srv.logger.Error("Failed to parse jwt", sl.Err(err))
+	} else if claims, ok := token.Claims.(*AuthClaims); ok {
+		srv.logger.Debug("parsed jwt", slog.String("User ID", claims.UserID.String()), slog.String("Role", string(claims.Role)))
+		return claims, nil
 	}
-	srv.logger.Debug("Successfully validated JWT")
-	srv.logger.Debug("Mapping payload to Payload struct...")
-
-	payload, err := MapToPayload(payloadData)
-	if err != nil {
-		srv.logger.Error("Failed to map payload to Payload struct", sl.Err(err))
-		return nil, err
-	}
-
-	return payload, nil
+	return nil, errors.New("unknown claims type, cannot proceed")
 }

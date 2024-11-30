@@ -6,14 +6,17 @@ mkShell {
   buildInputs = [
     go
     tailwindcss
+    templ
     sqlite
+    sqlc
     air
   ];
 
   shellHook = ''
-    alias tailwind-watch='tailwindcss build -o web/static/tailwind.css --watch'
-    alias tailwind-build='tailwindcss build -o web/static/tailwind.css --minify'
-    alias dev='air'
+    alias tailwind-watch='tailwindcss build -o static/tailwind.css --watch'
+    alias tailwind-build='tailwindcss build -o static/tailwind.css --minify'
+    alias templ-watch='templ generate -watch -lazy'
+    alias dev='tailwind-watch & disown && templ-watch & disown && air'
     alias test='go test ./...'
     alias test-verbose='go test -v -cover ./...'
     alias help='echo "$HELP"'

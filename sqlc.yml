@@ -1,0 +1,15 @@
+version: '2'
+sql:
+  - engine: 'sqlite'
+    schema: './storage/sqlite3/migrations'
+    queries: './storage/sqlite3/queries'
+    gen:
+      go:
+        package: 'repository'
+        out: 'internal/repository'
+        # sql_package: 'mattn/go-sqlite3'
+        overrides:
+          - db_type: 'uuid'
+            go_type:
+              import: 'github.com/google/uuid'
+              type: 'UUID'

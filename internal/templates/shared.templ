@@ -1,0 +1,26 @@
+package templates
+
+import "strconv"
+
+templ InputField(id, name, placeholder, inputType, value string, autofocus bool) {
+	<input
+			id={ id }
+			name={ name }
+			type={ inputType }
+			autofocus={ strconv.FormatBool(autofocus) }
+			placeholder={ placeholder }
+			value={ value }
+			class="text-[--primary] rounded-md p-2 border-2 border-gray-300 outline-none hover:border-[--accent-hover] transition duration-200"
+		/>
+}
+
+templ ButtonHtmx(btnType, apiAction, hxTarget, hxSwap, hxPushURL, content string) {
+	<button
+					type={ btnType }
+					hx-post={ apiAction }
+					hx-target={ hxTarget }
+					hx-swap={ hxSwap }
+					hx-push-url={ hxPushURL }
+					class="bg-[--accent] hover:bg-[--accent-hover] rounded-2xl px-7 py-2 text-center w-3/4 transition duration-200"
+				>{ content }</button>
+}

@@ -1,0 +1,14 @@
+<input id=\"
+\" name=\"
+\" type=\"
+\" autofocus=\"
+\" placeholder=\"
+\" value=\"
+\" class=\"text-[--primary] rounded-md p-2 border-2 border-gray-300 outline-none hover:border-[--accent-hover] transition duration-200\">
+<button type=\"
+\" hx-post=\"
+\" hx-target=\"
+\" hx-swap=\"
+\" hx-push-url=\"
+\" class=\"bg-[--accent] hover:bg-[--accent-hover] rounded-2xl px-7 py-2 text-center w-3/4 transition duration-200\">
+</button>

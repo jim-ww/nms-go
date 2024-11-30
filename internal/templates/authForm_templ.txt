@@ -1,0 +1,16 @@
+<div class=\"flex flex-col mb-2\"><label for=\"
+\" class=\"text-left ml-2 mb-1 block text-lg font-normal\">
+</label>
+<ul class=\"text-[--danger] mt-1\">
+<li>
+</li>
+</ul>
+</div>
+<main id=\"main\" class=\"flex items-center justify-center min-h-screen\"><form id=\"login-form\" class=\"bg-[--secondary] p-16 size-fit rounded-2xl hover:border-[--accent] border border-transparent max-w-sm\">
+<h1 id=\"form-type-title\" class=\"text-3xl font-medium text-center mb-6\">
+</h1>
+<br><div class=\"flex justify-center mb-5\">
+</div><p class=\"text-center\">
+</p><div class=\"flex justify-center\"><a hx-get=\"
+\" hx-push-url=\"true\" hx-target=\"#main\" hx-swap=\"outerHTML\" class=\"text-center underline transition duration-300 hover:text-[--accent] hover:cursor-pointer\">
+</a></div></form></main>

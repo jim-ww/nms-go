@@ -1,0 +1,73 @@
+package templates
+
+import (
+	"strings"
+)
+
+templ field(id, name, inputType, value string, autofocus bool, validationErrors []string) {
+	<div class="flex flex-col mb-2">
+		<label for={ id } class="text-left ml-2 mb-1 block text-lg font-normal">{ name }</label>
+		@InputField(id, name, "Enter " + strings.ToLower(name), inputType, value, autofocus)
+		if len(validationErrors) > 0 {
+			<ul class="text-[--danger] mt-1">
+				for _, err := range validationErrors {
+					<li>{ err }</li>
+				}
+			</ul>
+		}
+	</div>
+}
+
+
+templ AuthForm(usernameValue, emailValue string, isRegisterForm bool, validationErrors map[string][]string) {
+  <main id="main" class="flex items-center justify-center min-h-screen">
+		<form
+			id="login-form"
+			class="bg-[--secondary] p-16 size-fit rounded-2xl hover:border-[--accent] border border-transparent max-w-sm"
+		>
+			{{
+				title := "Login"
+				apiAction := "/api/login"
+				altAction := "Register"
+				altActionURL := "/register"
+				altActionText := "Don't have an account yet?"
+			}}
+			if isRegisterForm {
+
+				{{
+					title = "Register"
+					apiAction = "/api/register"
+					altAction = "Login"
+					altActionURL = "/login"
+					altActionText = "Already have an account?"
+				}}
+			}
+
+			<h1 id="form-type-title" class="text-3xl font-medium text-center mb-6">{ title }</h1>
+
+			@field("username-field", "Username", "text", usernameValue, true, validationErrors["username"])
+
+			if isRegisterForm {
+				@field("email-field", "Email", "text", emailValue,  false, validationErrors["email"])
+			}
+
+			@field("password-field", "Password", "password", "", false, validationErrors["password"])
+			
+			<br />
+
+			<div class="flex justify-center mb-5">
+				@ButtonHtmx("submit", apiAction, "#main", "outerHTML", "/", "Submit")
+			</div>
+			<p class="text-center">{ altActionText }</p>
+			<div class="flex justify-center">
+				<a
+					hx-get={ altActionURL }
+					hx-push-url="true"
+					hx-target="#main"
+					hx-swap="outerHTML"
+					class="text-center underline transition duration-300 hover:text-[--accent] hover:cursor-pointer"
+				>{ altAction }</a>
+			</div>
+		</form>
+	</main>
+}

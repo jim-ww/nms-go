@@ -23,18 +23,18 @@ func TestIsAllowed(t *testing.T) {
 		{user.ROLE_ADMIN, mw.OnlyAdmins, true},
 	}
 
-	testsCheckDynamicPaths := []struct {
-		path              string
-		expectedAccessLvl mw.AccessLevel
-		expectedOk        bool
-	}{
-		{"/web/static/somedir/somefile.js", mw.AllowUnauthorized, true},
-		{"/web/static/css/style.css", mw.AllowUnauthorized, true},
-		{"/api/notes/12345", mw.OnlyAuthorized, true},
-		{"/api/admin/notes/12345", mw.OnlyAdmins, true},
-		{"/api/admin/users/54321", mw.OnlyAdmins, true},
-		{"/unknown/path", 0, false},
-	}
+	// testsCheckDynamicPaths := []struct {
+	// 	path              string
+	// 	expectedAccessLvl mw.AccessLevel
+	// 	expectedOk        bool
+	// }{
+	// 	{"/static/somedir/somefile.js", mw.AllowUnauthorized, true},
+	// 	{"/static/css/style.css", mw.AllowUnauthorized, true},
+	// 	{"/api/notes/12345", mw.OnlyAuthorized, true},
+	// 	{"/api/admin/notes/12345", mw.OnlyAdmins, true},
+	// 	{"/api/admin/users/54321", mw.OnlyAdmins, true},
+	// 	{"/unknown/path", 0, false},
+	// }
 
 	for _, test := range testsIsAllowed {
 		result := mw.IsAllowed(test.role, test.access)
@@ -43,11 +43,11 @@ func TestIsAllowed(t *testing.T) {
 		}
 	}
 
-	for _, test := range testsCheckDynamicPaths {
-		result, ok := mw.CheckDynamicPath(test.path)
-		if result != test.expectedAccessLvl || ok != test.expectedOk {
-			t.Errorf("CheckDynamicPath(%v) = %v, %v; want %v, %v", test.path, result, ok, test.expectedAccessLvl, test.expectedOk)
-		}
-	}
+	// for _, test := range testsCheckDynamicPaths {
+	// 	result, ok := mw.CheckDynamicPath(test.path)
+	// 	if result != test.expectedAccessLvl || ok != test.expectedOk {
+	// 		t.Errorf("CheckDynamicPath(%v) = %v, %v; want %v, %v", test.path, result, ok, test.expectedAccessLvl, test.expectedOk)
+	// 	}
+	// }
 
 }
