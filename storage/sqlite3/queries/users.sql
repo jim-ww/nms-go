@@ -14,9 +14,15 @@ SELECT * FROM users
 WHERE email = ?;
 
 -- name: InsertUser :one
- INSERT INTO users (id, username, email, password, role)
- VALUES (uuid_generate_v4(), ?, ?, ?, ?)
+ INSERT INTO users (id, username, email, password, role, created_at, updated_at)
+ VALUES (?, ?, ?, ?, ?,?,?)
  RETURNING *;
+
+-- name: UpdateUserByID :one
+UPDATE users
+SET username = ?, email = ?, password = ?, role = ?, updated_at = ?
+WHERE id = ?
+RETURNING *;
 
 -- TODO returns int64
 -- name: IsUsernameTaken :one
