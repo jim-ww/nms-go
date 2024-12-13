@@ -8,3 +8,9 @@ dev:
 	tailwindcss build -o ./static/tailwind.css --minify --watch & disown
 	templ generate -watch -lazy & disown
 	air
+
+test:
+	go test ./...
+ 
+test-verbose:
+	go test -v -cover ./...
