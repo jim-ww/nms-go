@@ -43,7 +43,7 @@ func MustLoad() *Config {
 	var cfg Config
 
 	if err := cleanenv.ReadConfig(configPath, &cfg); err != nil {
-		log.Fatalf("failed to parse config at %s, err: %s", configPath, err.Error())
+		log.Fatalf("failed to parse config at %s, err: %v", configPath, err)
 	}
 
 	return &cfg

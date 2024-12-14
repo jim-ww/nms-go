@@ -8,6 +8,7 @@ sql:
         package: 'repository'
         out: 'internal/repository'
         overrides:
+          # User
           - go_type: 'github.com/google/uuid.UUID'
             column: 'users.id'
           - go_type: 'github.com/jim-ww/nms-go/internal/features/auth/role.Role'
@@ -18,6 +19,7 @@ sql:
             column: 'users.email'
           - go_type: 'string'
             column: 'users.password'
+          # Note
           - go_type: 'github.com/google/uuid.UUID'
             column: 'notes.id'
           - go_type: 'github.com/google/uuid.UUID'
