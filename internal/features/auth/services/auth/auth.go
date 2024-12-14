@@ -2,130 +2,141 @@ package auth
 
 import (
 	"context"
+	"database/sql"
 	"errors"
-	"log/slog"
+	"fmt"
+	"time"
 
-	"github.com/jim-ww/nms-go/internal/features/auth"
+	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
 	"github.com/jim-ww/nms-go/internal/features/auth/dtos"
+	"github.com/jim-ww/nms-go/internal/features/auth/role"
 	"github.com/jim-ww/nms-go/internal/features/auth/services/jwt"
-	"github.com/jim-ww/nms-go/internal/features/auth/services/password"
-	"github.com/jim-ww/nms-go/internal/features/user"
-	"github.com/jim-ww/nms-go/internal/features/user/storage"
+	validtr "github.com/jim-ww/nms-go/internal/features/auth/validator"
 	"github.com/jim-ww/nms-go/internal/repository"
-	"github.com/jim-ww/nms-go/internal/utils/loggers/sl"
+)
+
+const (
+	usernameF string = "username"
+	passwordF string = "password"
+	emailF    string = "email"
+)
+
+const (
+	usernameTaken        = "username already exists"
+	emailTaken           = "email already exists"
+	usernameDoesNotExist = "username does not exist"
+	invalidPassword      = "invalid password"
+)
+
+var (
+	ErrUserAlreadyExists    = errors.New("username or email already exists")
+	ErrUsernameDoesNotExist = errors.New("username does not exist")
 )
 
 // TODO use context
 // TODO make all SQL related stuff in (if possible readonly) transactions
 type AuthService struct {
-	logger    *slog.Logger
-	jwt       *jwt.JWTService
-	pwdHasher password.PasswordHasher
-	userRepo  *repository.Queries
-	validatr  *auth.AuthValidator
+	jwt  *jwt.JWTService
+	repo *repository.Queries
 }
 
-func New(logger *slog.Logger, jwtService *jwt.JWTService, passwordHasher password.PasswordHasher, userRepo *repository.Queries, validatr *auth.AuthValidator) *AuthService {
+func New(jwtService *jwt.JWTService, repo *repository.Queries) *AuthService {
 	return &AuthService{
-		logger:    logger,
-		jwt:       jwtService,
-		pwdHasher: passwordHasher,
-		userRepo:  userRepo,
-		validatr:  validatr,
+		jwt:  jwtService,
+		repo: repo,
 	}
 }
 
-func (srv *AuthService) LoginUser(ctx context.Context, dto *dtos.LoginDTO) (jwtToken string, validationErrors auth.ValidationErrors, err error) {
+func (srv *AuthService) LoginUser(ctx context.Context, dto *dtos.LoginDTO) (jwtToken string, validationErrors map[string][]string, err error) {
+	vErrors := validtr.ValidateLoginDTO(dto)
+	fieldErrors := convertValidationErrorsToMap(vErrors)
 
-	// validate dto
-	if validationErrors = srv.validatr.ValidateLoginDTO(dto); validationErrors.HasErrors() {
-		return "", validationErrors, nil
+	if vErrors != nil {
+		return "", fieldErrors, nil
 	}
 
-	user, err := srv.userRepo.FindUserByUsername(ctx, dto.Username)
+	user, err := srv.repo.FindUserByUsername(ctx, dto.Username)
 	if err != nil {
-
-		if errors.Is(err, storage.ErrUsernameDoesNotExist) {
-			srv.logger.Debug("Failed to get user by username", sl.Err(err))
-			validationErrors[auth.UsernameField] = append(validationErrors[auth.UsernameField], auth.UsernameDoesNotExist)
-			return "", validationErrors, nil
+		if errors.Is(err, sql.ErrNoRows) {
+			fieldErrors[usernameF] = append(fieldErrors[usernameF], usernameDoesNotExist)
+			return "", fieldErrors, nil
 		}
-
-		srv.logger.Error("Failed to get user by username", sl.Err(err))
-		return "", nil, err
+		return "", nil, fmt.Errorf("failed to get user by username: %w", err)
 	}
 
-	if err := srv.pwdHasher.ComparePasswords(user.Password, dto.Password); err != nil {
-		srv.logger.Debug("Password hash comparison failure", sl.Err(err))
-		validationErrors[auth.PasswordField] = append(validationErrors[auth.PasswordField], auth.InvalidPassword)
-		return "", validationErrors, nil
+	if err := ComparePasswords(user.Password, dto.Password); err != nil {
+		fieldErrors[passwordF] = append(fieldErrors[passwordF], invalidPassword)
+		return "", fieldErrors, nil
 	}
 
-	srv.logger.Debug("Generating JWT token")
 	jwtToken, err = srv.jwt.GenerateToken(user.ID, user.Role)
 	if err != nil {
-		srv.logger.Error("Failed to generate JWT token", sl.Err(err))
-		return "", nil, err
+		return "", nil, fmt.Errorf("failed to generate JWT token: %w", err)
 	}
 
 	return jwtToken, nil, nil
 }
 
-func (srv *AuthService) RegisterUser(ctx context.Context, dto *dtos.RegisterDTO) (jwtToken string, validationErrors auth.ValidationErrors, err error) {
+func (srv *AuthService) RegisterUser(ctx context.Context, dto *dtos.RegisterDTO) (jwtToken string, validationErrors map[string][]string, err error) {
 
-	if validationErrors = srv.validatr.ValidateRegisterDTO(dto); validationErrors.HasErrors() {
-		srv.logger.Debug("field validation completed with errors:", slog.Any("validationErrors", validationErrors))
+	vErrors := validtr.ValidateRegisterDTO(dto)
+	fieldErrors := convertValidationErrorsToMap(vErrors)
+
+	if vErrors != nil {
+		return "", fieldErrors, nil
+	}
+
+	taken, err := srv.repo.IsUsernameTaken(ctx, dto.Username)
+	if err != nil {
+		return "", nil, err
+	} else if taken == 1 {
+		fieldErrors[usernameF] = append(fieldErrors[usernameF], usernameTaken)
+	}
+
+	taken, err = srv.repo.IsEmailTaken(ctx, dto.Email)
+	if err != nil {
+		return "", nil, err
+	} else if taken == 1 {
+		fieldErrors[emailF] = append(fieldErrors[emailF], emailTaken)
+	}
+
+	fmt.Println("fieldErrors len:", len(fieldErrors)) // TODO remove
+
+	if len(fieldErrors) > 0 { // TODO remove len(fieldErrors[usernameF]) > 0 || len(fieldErrors[emailF]) > 0 || len(fieldErrors[passwordF]) > 0 {
 		return "", validationErrors, nil
 	}
 
-	srv.logger.Debug("field validation completed, checking for existing username/email")
-
-	taken, err := srv.userRepo.IsUsernameTaken(ctx, dto.Username)
+	hashedPassword, err := HashPassword(dto.Password)
 	if err != nil {
-		return "", nil, err
-	} else if taken {
-		validationErrors[auth.UsernameField] = append(validationErrors[auth.UsernameField], auth.UsernameTaken)
-	}
-	srv.logger.Debug("username validated")
-
-	taken, err = srv.userRepo.IsEmailTaken(dto.Email)
-	if err != nil {
-		return "", nil, err
-	} else if taken {
-		validationErrors[auth.EmailField] = append(validationErrors[auth.EmailField], ErrEmailTaken)
+		return "", nil, fmt.Errorf("failed to generate hash for password: %w", err)
 	}
 
-	srv.logger.Debug("email validated")
-
-	if validationErrors.HasErrors() {
-		srv.logger.Debug("field validation completed with errors:", slog.Any("validationErrors", validationErrors))
-		return "", validationErrors, nil
+	userID, err := srv.repo.InsertUser(ctx, repository.InsertUserParams{
+		ID:        uuid.New(),
+		Username:  dto.Username,
+		Email:     dto.Email,
+		Password:  string(hashedPassword),
+		Role:      role.ROLE_USER,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	})
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to create new user: %w", err)
 	}
 
-	srv.logger.Debug("field validation completed")
-
-	srv.logger.Debug("Generating hashed password")
-	hashedPassword, err := srv.pwdHasher.HashPassword(dto.Password)
+	jwtToken, err = srv.jwt.GenerateToken(userID.ID, role.ROLE_USER)
 	if err != nil {
-		srv.logger.Error("Failed to generate hash for password", sl.Err(err))
-		return "", nil, err
-	}
-	dto.Password = string(hashedPassword)
-	srv.logger.Debug("User attemt to register:", dto.SlogAttr())
-
-	srv.logger.Debug("Creating user with user repository")
-	userID, err := srv.userRepo.Create(dto.Username, dto.Email, string(hashedPassword), user.ROLE_USER)
-	if err != nil {
-		srv.logger.Error("Failed to create new user", sl.Err(err))
-		return "", nil, err
-	}
-
-	srv.logger.Debug("Generating JWT token")
-	jwtToken, err = srv.jwt.GenerateToken(userID, user.ROLE_USER)
-	if err != nil {
-		srv.logger.Error("Failed to generate JWT token", sl.Err(err))
-		return "", nil, err
+		return "", nil, fmt.Errorf("failed to generate JWT token: %w", err)
 	}
 
 	return jwtToken, nil, nil
+}
+
+func convertValidationErrorsToMap(validationErrors validator.ValidationErrors) map[string][]string {
+	vErrs := map[string][]string{}
+	for _, vErr := range validationErrors {
+		vErrs[vErr.Field()] = append(vErrs[vErr.Field()], vErr.Error())
+	}
+	return vErrs
 }

@@ -1,4 +1,5 @@
-
+-- name: FindAllNotes :many
+SELECT * FROM notes;
 
 -- Create(title string) (createdID int64, err error)
 -- 	GetByID(id int64) (*note.Note, error)

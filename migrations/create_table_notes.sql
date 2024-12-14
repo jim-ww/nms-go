@@ -3,6 +3,8 @@ CREATE TABLE IF NOT EXISTS notes (
       title TEXT NOT NULL,
       content TEXT,
       user_id TEXT NOT NULL,
+			created_at DATETIME NOT NULL,
+			updated_at DATETIME NOT NULL,
       FOREIGN KEY (user_id) REFERENCES users(id)
   );
 

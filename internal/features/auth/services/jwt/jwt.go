@@ -2,7 +2,6 @@ package jwt
 
 import (
 	"errors"
-	"log/slog"
 	"net/http"
 	"time"
 
@@ -10,12 +9,13 @@ import (
 	"github.com/google/uuid"
 	"github.com/jim-ww/nms-go/internal/config"
 	"github.com/jim-ww/nms-go/internal/features/auth/role"
-	"github.com/jim-ww/nms-go/internal/utils/loggers/sl"
 )
 
 var (
 	JWTTokenCookieName = "jwt-token"
 	ErrInvalidJWT      = errors.New("failed to validate JWT")
+	ErrTokenExpired    = errors.New("token has expired")
+	ErrUnknownClaims   = errors.New("unknown claims type, cannot proceed")
 )
 
 type AuthClaims struct {
@@ -25,14 +25,12 @@ type AuthClaims struct {
 }
 
 type JWTService struct {
-	logger *slog.Logger
-	cfg    *config.JWTTokenConfig
+	cfg *config.JWTTokenConfig
 }
 
-func New(logger *slog.Logger, cfg *config.JWTTokenConfig) *JWTService {
+func New(cfg *config.JWTTokenConfig) *JWTService {
 	return &JWTService{
-		logger: logger,
-		cfg:    cfg,
+		cfg: cfg,
 	}
 }
 
@@ -61,10 +59,9 @@ func (srv JWTService) ValidateAndExtractPayload(encodedToken string) (*AuthClaim
 		return srv.cfg.Secret, nil
 	})
 	if err != nil {
-		srv.logger.Error("Failed to parse jwt", sl.Err(err))
+		return nil, err
 	} else if claims, ok := token.Claims.(*AuthClaims); ok {
-		srv.logger.Debug("parsed jwt", slog.String("User ID", claims.UserID.String()), slog.String("Role", string(claims.Role)))
 		return claims, nil
 	}
-	return nil, errors.New("unknown claims type, cannot proceed")
+	return nil, ErrUnknownClaims
 }

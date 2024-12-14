@@ -7,6 +7,7 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jim-ww/nms-go/internal/features/auth/role"
@@ -108,24 +109,30 @@ func (q *Queries) FindUserByUsername(ctx context.Context, username string) (User
 }
 
 const insertUser = `-- name: InsertUser :one
- INSERT INTO users (id, username, email, password, role)
- VALUES (uuid_generate_v4(), ?, ?, ?, ?)
+ INSERT INTO users (id, username, email, password, role, created_at, updated_at)
+ VALUES (?, ?, ?, ?, ?,?,?)
  RETURNING id, username, email, password, role, created_at, updated_at
 `
 
 type InsertUserParams struct {
-	Username string
-	Email    string
-	Password string
-	Role     role.Role
+	ID        uuid.UUID
+	Username  string
+	Email     string
+	Password  string
+	Role      role.Role
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 func (q *Queries) InsertUser(ctx context.Context, arg InsertUserParams) (User, error) {
 	row := q.db.QueryRowContext(ctx, insertUser,
+		arg.ID,
 		arg.Username,
 		arg.Email,
 		arg.Password,
 		arg.Role,
+		arg.CreatedAt,
+		arg.UpdatedAt,
 	)
 	var i User
 	err := row.Scan(
@@ -161,9 +168,48 @@ SELECT EXISTS (
 )
 `
 
+// TODO returns int64
 func (q *Queries) IsUsernameTaken(ctx context.Context, username string) (int64, error) {
 	row := q.db.QueryRowContext(ctx, isUsernameTaken, username)
 	var column_1 int64
 	err := row.Scan(&column_1)
 	return column_1, err
+}
+
+const updateUserByID = `-- name: UpdateUserByID :one
+UPDATE users
+SET username = ?, email = ?, password = ?, role = ?, updated_at = ?
+WHERE id = ?
+RETURNING id, username, email, password, role, created_at, updated_at
+`
+
+type UpdateUserByIDParams struct {
+	Username  string
+	Email     string
+	Password  string
+	Role      role.Role
+	UpdatedAt time.Time
+	ID        uuid.UUID
+}
+
+func (q *Queries) UpdateUserByID(ctx context.Context, arg UpdateUserByIDParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, updateUserByID,
+		arg.Username,
+		arg.Email,
+		arg.Password,
+		arg.Role,
+		arg.UpdatedAt,
+		arg.ID,
+	)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.Password,
+		&i.Role,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }

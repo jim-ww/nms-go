@@ -1,15 +1,19 @@
 package dtos
 
-import "time"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type NoteSummaryDTO struct {
-	ID        int64     `json:"id"`
+	ID        uuid.UUID `json:"id"`
 	Title     string    `json:"title"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }
 
-func NewSummaryDTO(id int64, title string, createdAt time.Time, updatedAt time.Time) *NoteSummaryDTO {
+func NewSummaryDTO(id uuid.UUID, title string, createdAt time.Time, updatedAt time.Time) *NoteSummaryDTO {
 	return &NoteSummaryDTO{
 		ID:        id,
 		Title:     title,
@@ -19,14 +23,14 @@ func NewSummaryDTO(id int64, title string, createdAt time.Time, updatedAt time.T
 }
 
 type NoteDetailDTO struct {
-	ID        int64     `json:"id"`
+	ID        uuid.UUID `json:"id"`
 	Title     string    `json:"title"`
 	Contents  string    `json:"contents"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }
 
-func NewDetailDTO(id int64, title string, contents string, createdAt time.Time, updatedAt time.Time) *NoteDetailDTO {
+func NewDetailDTO(id uuid.UUID, title string, contents string, createdAt time.Time, updatedAt time.Time) *NoteDetailDTO {
 	return &NoteDetailDTO{
 		ID:        id,
 		Title:     title,
