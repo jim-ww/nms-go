@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"github.com/jim-ww/nms-go/internal/features/auth/dtos"
 	"github.com/jim-ww/nms-go/internal/features/auth/role"
@@ -23,10 +22,10 @@ const (
 )
 
 const (
-	usernameTaken        = "username already exists"
-	emailTaken           = "email already exists"
-	usernameDoesNotExist = "username does not exist"
-	invalidPassword      = "invalid password"
+	usernameTaken        = "Username already exists"
+	emailTaken           = "Email already exists"
+	usernameDoesNotExist = "Username does not exist"
+	invalidPassword      = "Invalid password"
 )
 
 var (
@@ -50,24 +49,24 @@ func New(jwtService *jwt.JWTService, repo *repository.Queries) *AuthService {
 
 func (srv *AuthService) LoginUser(ctx context.Context, dto *dtos.LoginDTO) (jwtToken string, validationErrors map[string][]string, err error) {
 	vErrors := validtr.ValidateLoginDTO(dto)
-	fieldErrors := convertValidationErrorsToMap(vErrors)
+	validationErrors = validtr.ConvertValidationErrorsToMap(vErrors)
 
-	if vErrors != nil {
-		return "", fieldErrors, nil
+	if len(validationErrors) > 0 {
+		return "", validationErrors, nil
 	}
 
 	user, err := srv.repo.FindUserByUsername(ctx, dto.Username)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			fieldErrors[usernameF] = append(fieldErrors[usernameF], usernameDoesNotExist)
-			return "", fieldErrors, nil
+			validationErrors[usernameF] = append(validationErrors[usernameF], usernameDoesNotExist)
+			return "", validationErrors, nil
 		}
 		return "", nil, fmt.Errorf("failed to get user by username: %w", err)
 	}
 
-	if err := ComparePasswords(user.Password, dto.Password); err != nil {
-		fieldErrors[passwordF] = append(fieldErrors[passwordF], invalidPassword)
-		return "", fieldErrors, nil
+	if err = ComparePasswords(user.Password, dto.Password); err != nil {
+		validationErrors[passwordF] = append(validationErrors[passwordF], invalidPassword)
+		return "", validationErrors, nil
 	}
 
 	jwtToken, err = srv.jwt.GenerateToken(user.ID, user.Role)
@@ -81,29 +80,27 @@ func (srv *AuthService) LoginUser(ctx context.Context, dto *dtos.LoginDTO) (jwtT
 func (srv *AuthService) RegisterUser(ctx context.Context, dto *dtos.RegisterDTO) (jwtToken string, validationErrors map[string][]string, err error) {
 
 	vErrors := validtr.ValidateRegisterDTO(dto)
-	fieldErrors := convertValidationErrorsToMap(vErrors)
+	validationErrors = validtr.ConvertValidationErrorsToMap(vErrors)
 
-	if vErrors != nil {
-		return "", fieldErrors, nil
+	if len(validationErrors) > 0 {
+		return "", validationErrors, nil
 	}
 
 	taken, err := srv.repo.IsUsernameTaken(ctx, dto.Username)
 	if err != nil {
 		return "", nil, err
 	} else if taken == 1 {
-		fieldErrors[usernameF] = append(fieldErrors[usernameF], usernameTaken)
+		validationErrors[usernameF] = append(validationErrors[usernameF], usernameTaken)
 	}
 
 	taken, err = srv.repo.IsEmailTaken(ctx, dto.Email)
 	if err != nil {
 		return "", nil, err
 	} else if taken == 1 {
-		fieldErrors[emailF] = append(fieldErrors[emailF], emailTaken)
+		validationErrors[emailF] = append(validationErrors[emailF], emailTaken)
 	}
 
-	fmt.Println("fieldErrors len:", len(fieldErrors)) // TODO remove
-
-	if len(fieldErrors) > 0 { // TODO remove len(fieldErrors[usernameF]) > 0 || len(fieldErrors[emailF]) > 0 || len(fieldErrors[passwordF]) > 0 {
+	if len(validationErrors) > 0 {
 		return "", validationErrors, nil
 	}
 
@@ -131,12 +128,4 @@ func (srv *AuthService) RegisterUser(ctx context.Context, dto *dtos.RegisterDTO)
 	}
 
 	return jwtToken, nil, nil
-}
-
-func convertValidationErrorsToMap(validationErrors validator.ValidationErrors) map[string][]string {
-	vErrs := map[string][]string{}
-	for _, vErr := range validationErrors {
-		vErrs[vErr.Field()] = append(vErrs[vErr.Field()], vErr.Error())
-	}
-	return vErrs
 }
