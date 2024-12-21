@@ -52,9 +52,8 @@ func (a AuthMiddleware) Handler(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		jwtCookie, err := c.Cookie(jwt.JWTTokenCookieName)
 		if err != nil {
-			c.Logger().Debug("No JWT cookie found", err)
-			a.handleUnauthorized(next)
-			return nil
+			c.Logger().Debug("No JWT cookie found, err:", err)
+			return a.handleUnauthorized(next)(c)
 		}
 
 		token, err := a.jwtService.ValidateAndExtractPayload(jwtCookie.Value)
@@ -95,7 +94,6 @@ func checkIsAllowedToAccess(c echo.Context, urlPath string, role role.Role) erro
 
 func (am AuthMiddleware) handleUnauthorized(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-
 		urlPath := c.Request().URL.Path
 		accessLevel, ok := RouteAccessLevels[urlPath]
 		if !ok {

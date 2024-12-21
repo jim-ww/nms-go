@@ -17,9 +17,9 @@ import (
 )
 
 const (
-	usernameF string = "username"
-	passwordF string = "password"
-	emailF    string = "email"
+	usernameF string = "Username"
+	passwordF string = "Password"
+	emailF    string = "Email"
 )
 
 const (
