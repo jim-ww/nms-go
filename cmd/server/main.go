@@ -5,38 +5,39 @@ import (
 	"database/sql"
 	"log"
 	"net/http"
+	"os"
 	"os/signal"
-	"syscall"
+	"time"
 
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jim-ww/nms-go/internal/config"
+	"github.com/jim-ww/nms-go/internal/lib/api"
+	"github.com/jim-ww/nms-go/internal/lib/api/routes"
+
 	authHandler "github.com/jim-ww/nms-go/internal/features/auth/handler"
 	authMiddleware "github.com/jim-ww/nms-go/internal/features/auth/middleware"
 	authService "github.com/jim-ww/nms-go/internal/features/auth/services/auth"
 	jwtService "github.com/jim-ww/nms-go/internal/features/auth/services/jwt"
+	echoLog "github.com/jim-ww/nms-go/internal/lib/loggers/echo"
 	"github.com/jim-ww/nms-go/internal/migrations"
 	"github.com/jim-ww/nms-go/internal/repository"
-	echoLog "github.com/jim-ww/nms-go/internal/utils/loggers/echo"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	_ "github.com/mattn/go-sqlite3"
 )
 
 func main() {
-	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer cancel()
-
-	if err := run(ctx); err != nil {
-		log.Fatal(err)
-	}
-}
-
-func run(ctx context.Context) error {
 	cfg := config.MustLoad()
 
 	e := echo.New()
 
-	// e.HTTPErrorHandler = errorhandler.CustomHTTPErrorHandler
+	e.HTTPErrorHandler = api.GlobalErrorHandler
+
+	e.Use(middleware.Logger())
+	e.Use(middleware.Recover())
+	e.Use(middleware.TimeoutWithConfig(middleware.TimeoutConfig{
+		Timeout: cfg.HTTPServer.Timeout,
+	}))
 
 	echoLog.SetLevel(e.Logger, cfg.Env)
 	e.Logger.Info("Initialized logger", "env", cfg.Env, "http-server.adress", cfg.HTTPServer.Address)
@@ -50,28 +51,31 @@ func run(ctx context.Context) error {
 	migrations.MustMigrate(db)
 	e.Logger.Info("Database migration completed successfully")
 
-	repository := repository.New(db)
+	repo := repository.New(db)
 
 	jwtService := jwtService.New(cfg.JWTTokenConfig)
-	authService := authService.New(jwtService, repository)
+	authService := authService.New(jwtService, repo)
 	authHandler := authHandler.New(authService, jwtService)
 	authMiddleware := authMiddleware.New(jwtService)
 
-	e.Use(authMiddleware.Handler)
-	e.Use(middleware.Logger())
-
-	e.Static("/web", "./web")
-	e.File("/favicon.ico", "web/favicon.ico")
-
-	e.GET("/login", authHandler.LoginForm)
-	e.GET("/register", authHandler.RegisterForm)
-	e.POST("/api/login", authHandler.Login)
-	e.POST("/api/register", authHandler.Register)
+	routes.AddRoutes(e, authHandler, *authMiddleware)
 
 	e.Logger.Info("Starting server...")
-	if err = http.ListenAndServe(cfg.HTTPServer.Address, e); err != nil {
-		e.Logger.Error("Failed to start http server", "address", cfg.HTTPServer.Address, "error", err)
-	}
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+	// Start server
+	go func() {
+		e.Logger.Info("Starting server...")
+		if err := e.Start(cfg.HTTPServer.Address); err != nil && err != http.ErrServerClosed {
+			e.Logger.Fatal("shutting down the server")
+		}
+	}()
 
-	return nil // TODO
+	// Wait for interrupt signal to gracefully shut down the server with a timeout of 10 seconds.
+	<-ctx.Done()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := e.Shutdown(ctx); err != nil {
+		e.Logger.Fatal(err)
+	}
 }
