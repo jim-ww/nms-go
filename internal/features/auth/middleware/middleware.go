@@ -64,3 +64,14 @@ func (a *AuthMiddleware) OnlyUser(next echo.HandlerFunc) echo.HandlerFunc {
 		return errors.ErrUnauthorized
 	}
 }
+
+func (a *AuthMiddleware) OnlyUnauthorized(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		_, err := c.Cookie(jwt.JWTCookieName)
+		if err != nil {
+			return next(c)
+		}
+		// if user has JWT cookie, then redirect him
+		return c.Redirect(http.StatusSeeOther, "/")
+	}
+}

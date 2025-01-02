@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/jim-ww/nms-go/internal/lib/api/response"
 	"github.com/jim-ww/nms-go/internal/lib/errors"
@@ -22,7 +23,11 @@ func GlobalErrorHandler(err error, c echo.Context) {
 	switch err {
 	case errors.ErrUnauthorized:
 		response.Message = errors.ErrUnauthorized.Error()
-		c.JSON(http.StatusForbidden, response)
+		if strings.HasPrefix(c.Request().URL.Path, "/admin") {
+			c.JSON(http.StatusForbidden, response)
+		} else {
+			c.Redirect(http.StatusSeeOther, "/login")
+		}
 	case errors.ErrInvalidJWT, errors.ErrTokenExpired, errors.ErrUnknownClaims:
 		c.Redirect(http.StatusSeeOther, "/logout")
 	default:
