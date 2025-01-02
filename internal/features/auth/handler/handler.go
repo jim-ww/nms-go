@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/jim-ww/nms-go/internal/features/auth/dtos"
 	"github.com/jim-ww/nms-go/internal/features/auth/services/auth"
@@ -79,4 +80,16 @@ func (a *AuthHandler) Register(c echo.Context) error {
 	c.SetCookie(a.jwtService.NewTokenCookie(token))
 	c.Redirect(http.StatusSeeOther, "/")
 	return nil
+}
+func Logout(c echo.Context) error {
+	c.SetCookie(&http.Cookie{
+		Name:     jwt.JWTCookieName,
+		Value:    "",
+		Path:     "/",
+		Expires:  time.Now().Add(-1 * time.Hour),
+		HttpOnly: true,
+		Secure:   false,
+		SameSite: http.SameSiteLaxMode,
+	})
+	return c.Redirect(http.StatusSeeOther, "/login")
 }
