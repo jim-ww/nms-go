@@ -20,7 +20,6 @@ func ValidateLoginDTO(dto *dtos.LoginDTO) (errs validator.ValidationErrors) {
 func ValidateRegisterDTO(dto *dtos.RegisterDTO) (errs validator.ValidationErrors) {
 	if err := validate.Struct(dto); err != nil {
 		validationErrors, _ := err.(validator.ValidationErrors)
-		fmt.Println(validationErrors)
 		return validationErrors
 	}
 	return errs

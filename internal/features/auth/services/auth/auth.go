@@ -28,11 +28,6 @@ const (
 	invalidPassword      = "Invalid password"
 )
 
-var (
-	ErrUserAlreadyExists    = errors.New("username or email already exists")
-	ErrUsernameDoesNotExist = errors.New("username does not exist")
-)
-
 // TODO use context
 // TODO make all SQL related stuff in (if possible readonly) transactions
 type AuthService struct {
