@@ -1,0 +1,33 @@
+package templates
+
+import "github.com/jim-ww/nms-go/internal/repository"
+
+templ Dashboard(notes []*repository.Note) {
+	<section>
+		@Block(LeftPanel(notes), "border-l-transparent")
+		Hello, user!
+	</section>
+}
+
+templ LeftPanel(notes []*repository.Note) {
+	<div class="h-screen ">
+		<!-- search block -->
+		<div class="flex flex-col">
+			@ButtonHtmx("button", "hx-post", "/api/notes", "", "", "New note", "")
+		</div>
+		<!-- notes list -->
+		<div class="flex flex-col p-2">
+			for _, note := range notes {
+				@ListNote(note)
+			}
+		</div>
+	</div>
+}
+
+templ ListNote(note *repository.Note) {
+	<div class="bg">
+		<h3>{ note.Title }</h3>
+		<label>Created at:</label>
+		<span>{ note.CreatedAt.Format("2006-01-02") }</span>
+	</div>
+}

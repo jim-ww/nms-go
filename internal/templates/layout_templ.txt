@@ -1,0 +1,3 @@
+<!doctype html><html lang=\"en\"><head><!-- TODO load font family Nunito --><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><title>
+</title><link rel=\"stylesheet\" href=\"/web/tailwind.css\"><link rel=\"stylesheet\" href=\"/web/styles.css\"><link rel=\"icon\" href=\"/favicon.ico\" type=\"image/x-icon\"><script src=\"/web/js/htmx-2.0.3.min.js\"></script></head><body class=\"w-screen h-screen bg-[--primary] text-[--text] m-0 p-0 overflow-hidden flex \">
+</body></html>

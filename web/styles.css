@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+:root {
+    --primary: #222831;
+    --primary-hover: #494f5a;
+    --primary-active: #5d6574;
+    --primary-active-alt: #525866;
+    --secondary: #393e46;
+    --secondary-hover: #2e3239;
+    --secondary-active: #414751;
+    --accent: #00acb5;
+    --accent-hover: #017177;
+    --accent-active: #00cbd6;
+    --danger: #ba0000;
+    --danger-hover: red;
+    --shadow: hsla(0, 0%, 0%, 0.1);
+    --shadow-alt: #0000001a;
+    --text: #eee;
+    --text-alt: #aaa;
+}

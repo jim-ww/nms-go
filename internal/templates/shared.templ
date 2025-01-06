@@ -1,36 +1,45 @@
 package templates
 
-import "strconv"
+import (
+	"strconv"
+	"strings"
+)
 
-templ InputField(id, name, placeholder, inputType, value string, autofocus bool) {
+templ InputField(id, name, inputType, value string, autofocus bool) {
 	<input
-			id={ id }
-			name={ name }
-			type={ inputType }
-			autofocus={ strconv.FormatBool(autofocus) }
-			placeholder={ placeholder }
-			value={ value }
-			class="text-[--primary] rounded-md p-2 border-2 border-gray-300 outline-none hover:border-[--accent-hover] transition duration-200"
-		/>
+		id={ id }
+		name={ name }
+		type={ inputType }
+		autofocus={ strconv.FormatBool(autofocus) }
+		placeholder={ "Enter " + strings.ToLower(name) }
+		value={ value }
+		class="text-[--primary] rounded-md p-2 border-2 border-gray-300 outline-none hover:border-[--accent-hover] transition duration-200"
+	/>
 }
 
-templ ButtonHtmx(btnType, apiAction, hxTarget, hxSwap, hxPushURL, content string) {
+templ ButtonHtmx(btnType, apiAction, hxTarget, hxSwap, hxPushURL, content, cssClasses string) {
 	<button
-					type={ btnType }
-					hx-post={ apiAction }
-					hx-target={ hxTarget }
-					hx-swap={ hxSwap }
-					hx-push-url={ hxPushURL }
-					class="bg-[--accent] hover:bg-[--accent-hover] rounded-2xl px-7 py-2 text-center w-3/4 transition duration-200"
-				>{ content }</button>
+		type={ btnType }
+		hx-post={ apiAction }
+		hx-target={ hxTarget }
+		hx-swap={ hxSwap }
+		hx-push-url={ hxPushURL }
+		class="bg-[--accent] hover:bg-[--accent-hover] rounded-2xl px-7 py-2 text-center w-3/4 transition duration-200"
+	>{ content }</button>
 }
 
 templ LinkText(hxGet, hxPushURL, hxTarget, hxSwap, text string) {
-  <a
-					hx-get={ hxGet }
-					hx-push-url={ hxPushURL }
-					hx-target={ hxTarget }
-					hx-swap={ hxSwap }
-					class="text-center underline transition duration-300 hover:text-[--accent] hover:cursor-pointer"
-				>{ text }</a>
+	<a
+		hx-get={ hxGet }
+		hx-push-url={ hxPushURL }
+		hx-target={ hxTarget }
+		hx-swap={ hxSwap }
+		class="text-center underline transition duration-300 hover:text-[--accent] hover:cursor-pointer"
+	>{ text }</a>
+}
+
+templ Block(content templ.Component, cssClasses string) {
+	<div class={ "flex flex-col text-center bg-[--secondary] hover:border-[--accent-hover] rounded border-2" + cssClasses }>
+		@content
+	</div>
 }
