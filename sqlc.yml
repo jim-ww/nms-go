@@ -1,26 +1,27 @@
-version: '2'
+version: "2"
 sql:
-  - engine: 'sqlite'
-    schema: './migrations'
-    queries: './internal/sql/sqlite/queries'
+  - engine: "sqlite"
+    schema: "./internal/migrations/sqlite3"
+    queries: "./internal/sql/sqlite/queries"
     gen:
       go:
-        package: 'repository'
-        out: 'internal/repository'
+        package: "repository"
+        out: "internal/repository"
         overrides:
           # User
-          - go_type: 'github.com/google/uuid.UUID'
-            column: 'users.id'
-          - go_type: 'github.com/jim-ww/nms-go/internal/features/auth/role.Role'
-            column: 'users.role'
-          - go_type: 'string'
-            column: 'users.username'
-          - go_type: 'string'
-            column: 'users.email'
-          - go_type: 'string'
-            column: 'users.password'
+          - go_type: "github.com/google/uuid.UUID"
+            column: "users.id"
+          - go_type: "github.com/jim-ww/nms-go/internal/features/auth/role.Role"
+            column: "users.role"
+          - go_type: "string"
+            column: "users.username"
+          - go_type: "string"
+            column: "users.email"
+          - go_type: "string"
+            column: "users.password"
           # Note
-          - go_type: 'github.com/google/uuid.UUID'
-            column: 'notes.id'
-          - go_type: 'github.com/google/uuid.UUID'
-            column: 'notes.user_id'
+          - go_type: "github.com/google/uuid.UUID"
+            column: "notes.id"
+          - go_type: "github.com/google/uuid.UUID"
+            column: "notes.user_id"
+            go_struct_tag: db:"user_id"

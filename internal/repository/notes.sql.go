@@ -7,38 +7,53 @@ package repository
 
 import (
 	"context"
+	"database/sql"
+	"time"
+
+	"github.com/google/uuid"
 )
 
-const findAllNotes = `-- name: FindAllNotes :many
-SELECT id, title, content, user_id, created_at, updated_at FROM notes
+const create = `-- name: Create :one
+INSERT INTO notes(id, title, content, user_id, created_at, updated_at) VALUES (?, ?, ?, ?, ? ,?) RETURNING id, title, content, user_id, created_at, updated_at
 `
 
-func (q *Queries) FindAllNotes(ctx context.Context) ([]Note, error) {
-	rows, err := q.db.QueryContext(ctx, findAllNotes)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Note
-	for rows.Next() {
-		var i Note
-		if err := rows.Scan(
-			&i.ID,
-			&i.Title,
-			&i.Content,
-			&i.UserID,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+type CreateParams struct {
+	ID        uuid.UUID
+	Title     string
+	Content   sql.NullString
+	UserID    uuid.UUID `db:"user_id"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+func (q *Queries) Create(ctx context.Context, arg CreateParams) (Note, error) {
+	row := q.db.QueryRowContext(ctx, create,
+		arg.ID,
+		arg.Title,
+		arg.Content,
+		arg.UserID,
+		arg.CreatedAt,
+		arg.UpdatedAt,
+	)
+	var i Note
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Content,
+		&i.UserID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getUserNotesCount = `-- name: GetUserNotesCount :one
+SELECT COUNT(id) FROM notes WHERE user_id = ?
+`
+
+func (q *Queries) GetUserNotesCount(ctx context.Context, userID uuid.UUID) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getUserNotesCount, userID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
 }

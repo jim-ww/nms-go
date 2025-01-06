@@ -16,7 +16,7 @@ type Note struct {
 	ID        uuid.UUID
 	Title     string
 	Content   sql.NullString
-	UserID    uuid.UUID
+	UserID    uuid.UUID `db:"user_id"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }

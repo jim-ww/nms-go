@@ -1,7 +1,9 @@
--- name: FindAllNotes :many
-SELECT * FROM notes;
+-- name: GetUserNotesCount :one
+SELECT COUNT(id) FROM notes WHERE user_id = ?;
 
--- Create(title string) (createdID int64, err error)
+-- name: Create :one
+INSERT INTO notes(id, title, content, user_id, created_at, updated_at) VALUES (?, ?, ?, ?, ? ,?) RETURNING *;
+
 -- 	GetByID(id int64) (*note.Note, error)
 -- 	GetByTitle(title string) (*note.Note, error)
 -- 	GetAll() ([]*note.Note, error)

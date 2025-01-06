@@ -33,6 +33,8 @@ func (a *AuthMiddleware) OnlyAdmins(next echo.HandlerFunc) echo.HandlerFunc {
 			c.Redirect(http.StatusSeeOther, "/logout")
 			return nil
 		}
+		c.Logger().Debug("Setting user_id in context...")
+		c.Set("user_id", payload.UserID)
 
 		if payload.Role == role.ROLE_ADMIN {
 			return next(c)
@@ -56,6 +58,8 @@ func (a *AuthMiddleware) OnlyUser(next echo.HandlerFunc) echo.HandlerFunc {
 			c.Redirect(http.StatusSeeOther, "/logout")
 			return nil
 		}
+		c.Logger().Debug("Setting user_id in context...")
+		c.Set("user_id", payload.UserID)
 
 		if payload.Role == role.ROLE_USER || payload.Role == role.ROLE_ADMIN {
 			return next(c)
